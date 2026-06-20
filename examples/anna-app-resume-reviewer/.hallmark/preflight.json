@@ -1,0 +1,15 @@
+{
+  "date": "2026-06-20",
+  "project": "examples/anna-app-resume-reviewer",
+  "framework": "vanilla static Anna bundle",
+  "font_stack": "system Aptos/Segoe UI fallback tokens in bundle/tokens.css",
+  "palette": "CSS custom properties in bundle/tokens.css",
+  "motion": "motion-cut; no animation library",
+  "spacing": "CSS custom properties with rem scale",
+  "preserve": [
+    "Anna static bundle structure",
+    "existing token split between tokens.css and style.css",
+    "bundled Executa tool flow",
+    "separate Review, Results, Versions, and Feedback pages"
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "name": "anna-app-resume-reviewer",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Anna App for AI-assisted resume review with ATS scoring, reviewer perspectives, approved changes, and version history.",
   "type": "module",
   "scripts": {

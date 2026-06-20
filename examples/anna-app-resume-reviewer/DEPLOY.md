@@ -45,7 +45,7 @@ anna-app apps push --account $ANNA_HOST --json
 ## Cut And Submit
 
 ```powershell
-anna-app apps cut 0.1.1 --account $ANNA_HOST --json
+anna-app apps cut 0.1.2 --account $ANNA_HOST --json
 anna-app apps submit-review resume-reviewer --account $ANNA_HOST --json
 anna-app apps status resume-reviewer --account $ANNA_HOST --json
 ```
@@ -53,7 +53,7 @@ anna-app apps status resume-reviewer --account $ANNA_HOST --json
 Release only after Anna marks the app approved:
 
 ```powershell
-anna-app apps release 0.1.1 --account $ANNA_HOST --json
+anna-app apps release 0.1.2 --account $ANNA_HOST --json
 ```
 
 Do not commit `.anna`, `.venv`, `node_modules`, `dist-anna`, PATs, or provider keys.

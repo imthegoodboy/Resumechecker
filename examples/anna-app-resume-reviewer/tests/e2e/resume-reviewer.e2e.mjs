@@ -55,15 +55,17 @@ async function main() {
   await frame.locator("#save-feedback-btn").click();
   await expectText(frame, "#toast", (text) => text.includes("Feedback saved"));
 
-  await page.setViewportSize({ width: 390, height: 820 });
-  const mobileFrame = await waitForAppFrame(page);
-  const overflow = await mobileFrame.evaluate(() => ({
-    document: document.documentElement.scrollWidth,
-    viewport: document.documentElement.clientWidth,
-    body: document.body.scrollWidth,
-  }));
-  if (overflow.document > overflow.viewport || overflow.body > overflow.viewport) {
-    throw new Error(`mobile horizontal overflow detected: ${JSON.stringify(overflow)}`);
+  for (const width of [320, 375, 414, 768]) {
+    await page.setViewportSize({ width, height: width === 768 ? 900 : 820 });
+    const mobileFrame = await waitForAppFrame(page);
+    const overflow = await mobileFrame.evaluate(() => ({
+      document: document.documentElement.scrollWidth,
+      viewport: document.documentElement.clientWidth,
+      body: document.body.scrollWidth,
+    }));
+    if (overflow.document > overflow.viewport || overflow.body > overflow.viewport) {
+      throw new Error(`horizontal overflow at ${width}px: ${JSON.stringify(overflow)}`);
+    }
   }
 
   if (pageErrors.length) {

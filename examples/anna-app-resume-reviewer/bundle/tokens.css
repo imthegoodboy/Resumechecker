@@ -1,4 +1,4 @@
-/* Hallmark - pre-emit critique: P5 H4 E5 S4 R5 V4 */
+/* Hallmark - pre-emit critique: P5 H5 E5 S4 R5 V5 */
 :root {
   color-scheme: light;
 
@@ -6,22 +6,23 @@
   --font-body: "Aptos", "Geist", "Segoe UI Variable Text", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Cascadia Mono", "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
 
-  --color-paper: #fbfbf8;
-  --color-paper-2: #f1f3f1;
-  --color-paper-3: #e3e7e4;
-  --color-surface: #ffffff;
-  --color-surface-raised: #f7f8f6;
-  --color-rule: #d9dedb;
-  --color-rule-strong: #b9c2bd;
-  --color-neutral: #68716c;
-  --color-muted: #47514c;
-  --color-ink: #151918;
-  --color-ink-2: #252c29;
-  --color-accent: #087c75;
-  --color-accent-2: #2f7d42;
-  --color-accent-soft: #dff3ef;
-  --color-accent-ink: #ffffff;
-  --color-focus: #0a7f78;
+  --color-paper: oklch(98.5% 0.008 118);
+  --color-paper-2: oklch(95.4% 0.011 128);
+  --color-paper-3: oklch(90.4% 0.014 132);
+  --color-surface: oklch(99.7% 0.003 118);
+  --color-surface-raised: oklch(96.8% 0.01 130);
+  --color-rule: oklch(86.5% 0.018 143);
+  --color-rule-strong: oklch(75.3% 0.027 150);
+  --color-neutral: oklch(50% 0.026 156);
+  --color-muted: oklch(39% 0.025 156);
+  --color-ink: oklch(19% 0.018 166);
+  --color-ink-2: oklch(27% 0.019 166);
+  --color-accent: oklch(48% 0.118 183);
+  --color-accent-2: oklch(47% 0.12 145);
+  --color-accent-soft: oklch(93.5% 0.043 178);
+  --color-accent-wash: oklch(96.5% 0.026 178);
+  --color-accent-ink: oklch(99% 0.004 118);
+  --color-focus: oklch(50% 0.13 183);
   --color-warn: oklch(62% 0.16 70);
   --color-warn-soft: oklch(93% 0.045 70);
   --color-error: oklch(52% 0.18 29);
@@ -60,8 +61,10 @@
   --radius-xs: 0.25rem;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
-  --shadow-whisper: 0 1px 2px rgb(20 25 24 / 0.06);
-  --shadow-rail: 0 18px 45px rgb(20 25 24 / 0.08);
+  --shadow-whisper: 0 1px 2px oklch(18% 0.018 166 / 0.06);
+  --shadow-rail: 0 18px 45px oklch(18% 0.018 166 / 0.08);
+  --shadow-focus: 0 0 0 3px oklch(50% 0.13 183 / 0.14);
+  --shadow-inline: inset 0 -1px 0 var(--color-rule);
   --z-base: 1;
   --z-raised: 10;
   --z-toast: 500;
