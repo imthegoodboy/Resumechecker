@@ -29,12 +29,13 @@ Manual checks:
 
 - App loads in the Anna dev harness.
 - Upload, paste, and target-role fields work.
-- `tools.invoke` returns analysis.
+- `tools.invoke` returns analysis with the app's 150 second timeout.
 - ATS score, missing keywords, problems, suggestions, and reviewer tabs render.
 - Approving and saving creates a version.
 - Restoring a version updates the draft editor.
-- Feedback saves through storage.
+- Feedback and version history save through the compact `resume-reviewer:v2` storage index.
 - Mobile widths have no horizontal overflow.
+- Store listing logo, cover, and screenshots load from GitHub raw URLs.
 
 ## Publish Draft
 
@@ -45,7 +46,7 @@ anna-app apps push --account $ANNA_HOST --json
 ## Cut And Submit
 
 ```powershell
-anna-app apps cut 0.1.2 --account $ANNA_HOST --json
+anna-app apps cut 0.1.3 --account $ANNA_HOST --json
 anna-app apps submit-review resume-reviewer --account $ANNA_HOST --json
 anna-app apps status resume-reviewer --account $ANNA_HOST --json
 ```
@@ -53,7 +54,7 @@ anna-app apps status resume-reviewer --account $ANNA_HOST --json
 Release only after Anna marks the app approved:
 
 ```powershell
-anna-app apps release 0.1.2 --account $ANNA_HOST --json
+anna-app apps release 0.1.3 --account $ANNA_HOST --json
 ```
 
 Do not commit `.anna`, `.venv`, `node_modules`, `dist-anna`, PATs, or provider keys.

@@ -1,14 +1,14 @@
 {
   "slug": "resume-reviewer",
   "name": "Resume Reviewer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "executa_type": "tool",
   "description": "Analyzes resumes for ATS match, recruiter screen quality, and senior-engineer evidence using Anna host sampling with deterministic fallback.",
   "tool_id": "tool-nikku696969-resume-reviewer-cvkbfasx",
   "type": "python",
   "enabled": true,
   "distribution": {
-    "active": "local",
+    "active": "binary",
     "profiles": {
       "local": {
         "type": "local",
@@ -21,23 +21,28 @@
         "supports_protocol": true,
         "binary_urls": {
           "darwin-arm64": {
-            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-nikku696969-resume-reviewer-cvkbfasx-darwin-arm64.tar.gz",
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.2/tool-nikku696969-resume-reviewer-cvkbfasx-darwin-arm64.tar.gz",
             "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
           },
           "darwin-x86_64": {
-            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-nikku696969-resume-reviewer-cvkbfasx-darwin-x86_64.tar.gz",
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.2/tool-nikku696969-resume-reviewer-cvkbfasx-darwin-x86_64.tar.gz",
             "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
           },
           "linux-x86_64": {
-            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-nikku696969-resume-reviewer-cvkbfasx-linux-x86_64.tar.gz",
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.2/tool-nikku696969-resume-reviewer-cvkbfasx-linux-x86_64.tar.gz",
             "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
+          },
+          "windows-x86_64": {
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.2/tool-nikku696969-resume-reviewer-cvkbfasx-windows-x86_64.zip",
+            "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx.exe",
+            "format": "zip"
           }
         }
       }
     }
   },
-  "_comment": "Keep active=local for development. For production packaging, use the real minted Anna tool_id in tool_id, package_name, executable_name, pyproject.toml project name, and script name before running the binary release workflow. The binary profile points to GitHub Release assets built by .github/workflows/anna-app-publish.yml using the bin/<tool_id> + manifest.json archive layout."
+  "_comment": "Production uses the binary profile. For local source-mode development, anna-app dev still discovers this bundled Executa from the project tree; the binary profile points to GitHub Release assets built by .github/workflows/anna-app-publish.yml using the bin/<tool_id> + manifest.json archive layout."
 }

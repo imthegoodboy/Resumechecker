@@ -1,6 +1,6 @@
 [project]
 name = "tool-nikku696969-resume-reviewer-cvkbfasx"
-version = "0.1.1"
+version = "0.1.2"
 description = "Resume Reviewer Executa for Anna Apps: extracts resumes and produces structured review feedback via Anna host sampling with deterministic fallback."
 requires-python = ">=3.10"
 authors = [{ name = "Anna Developer" }]

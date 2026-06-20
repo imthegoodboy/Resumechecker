@@ -1,0 +1,36 @@
+name: resume-reviewer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/anna-app-resume-reviewer/**"
+      - ".github/workflows/resume-reviewer.yml"
+  pull_request:
+    paths:
+      - "examples/anna-app-resume-reviewer/**"
+      - ".github/workflows/resume-reviewer.yml"
+
+defaults:
+  run:
+    working-directory: examples/anna-app-resume-reviewer
+
+jobs:
+  validate-test-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: examples/anna-app-resume-reviewer/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - run: npm ci
+      - run: npm run validate
+      - run: npm test
+      - run: npm run fixture:verify
+      - run: npm run test:e2e

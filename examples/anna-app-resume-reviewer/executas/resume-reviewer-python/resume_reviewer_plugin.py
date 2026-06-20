@@ -38,7 +38,7 @@ MAX_RESUME_CHARS = 28000
 
 MANIFEST = {
     "display_name": "Resume Reviewer",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Structured resume review for ATS match, recruiter screen, and senior technical evidence.",
     "author": "Anna Developer",
     "host_capabilities": ["llm.sample"],
@@ -92,7 +92,7 @@ MANIFEST = {
                 {
                     "name": "perspectives",
                     "type": "array",
-                    "items_type": "string",
+                    "items": {"type": "string"},
                     "description": "Reviewer perspectives to include: recruiter, ats, engineer.",
                     "required": False,
                     "default": ["recruiter", "ats", "engineer"],

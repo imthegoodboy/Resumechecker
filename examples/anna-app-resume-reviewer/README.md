@@ -40,17 +40,20 @@ The UI calls:
 anna.tools.invoke({
   tool_id: "<resolved resume-reviewer tool id>",
   method: "analyze_resume",
-  args: { resume_text, file_b64, target_role, job_description, perspectives }
+  args: { resume_text, file_b64, target_role, job_description, perspectives },
+  timeoutMs: 150000
 });
 ```
 
 The Executa extracts text, runs a deterministic baseline analysis, then asks Anna host sampling for a stricter JSON review when `llm.sample` is granted. If sampling is unavailable, the fallback result still fills the same UI contract.
 
-Version history and feedback use:
+Version history and feedback use a compact storage index plus per-version draft
+records so saved resumes stay below Anna's per-value storage limit:
 
 ```js
-anna.storage.get({ key: "resume-reviewer:v1" });
-anna.storage.set({ key: "resume-reviewer:v1", value });
+anna.storage.get({ key: "resume-reviewer:v2" });
+anna.storage.set({ key: "resume-reviewer:v2", value: compactIndex });
+anna.storage.set({ key: "resume-reviewer:version:<id>", value: draftRecord });
 ```
 
 ## Privacy
@@ -68,4 +71,5 @@ Resume content is sent only to the bundled Anna Executa and, when granted, to An
 - `anna-app dev --port 5184 --llm-account https://anna.partners`
 - Check desktop and mobile widths.
 - Confirm upload, review, approve, save version, restore version, and feedback flows.
+- Confirm the installed Agent shows the bundled tool as `Binary` and `Running`.
 - Use OCR or a selectable-text export for scanned/image-only PDFs.

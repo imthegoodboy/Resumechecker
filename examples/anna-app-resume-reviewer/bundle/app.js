@@ -8,7 +8,12 @@ const TOOL_ID =
     window.__ANNA_TOOL_IDS__[EXECUTA_HANDLE]) ||
   DEV_FALLBACK_TOOL_ID;
 const TOOL_METHOD = "analyze_resume";
-const STORAGE_KEY = "resume-reviewer:v1";
+const TOOL_INVOKE_TIMEOUT_MS = 150000;
+const STORAGE_KEY = "resume-reviewer:v2";
+const LEGACY_STORAGE_KEY = "resume-reviewer:v1";
+const VERSION_STORAGE_PREFIX = "resume-reviewer:version:";
+const MAX_STORED_VERSIONS = 12;
+const STORAGE_VALUE_SOFT_LIMIT = 220 * 1024;
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 const $ = (id) => document.getElementById(id);
@@ -166,6 +171,7 @@ async function onReviewSubmit(event) {
       tool_id: TOOL_ID,
       method: TOOL_METHOD,
       args,
+      timeoutMs: TOOL_INVOKE_TIMEOUT_MS,
     });
     const payload = unwrapToolReply(reply);
     app.analysis = normalizeAnalysis(payload.analysis || payload);
@@ -477,14 +483,25 @@ async function saveVersion(reason) {
     accepted_suggestions: app.analysis
       ? app.analysis.suggestions.filter((s) => app.selectedSuggestionIds.has(s.id))
       : [],
-    feedback: { ...app.feedback, notes: els.feedbackNotes.value.trim() },
+    feedback: {
+      rating: app.feedback.rating || "",
+      notes: limitString(els.feedbackNotes.value.trim(), 8000),
+    },
   };
   app.versions.unshift(version);
-  app.versions = app.versions.slice(0, 12);
+  const droppedVersions = app.versions.slice(MAX_STORED_VERSIONS);
+  app.versions = app.versions.slice(0, MAX_STORED_VERSIONS);
   app.activeVersionId = version.id;
-  await persistState();
+  const versionPersisted = await saveVersionRecord(version);
+  const indexPersisted = await persistState();
+  droppedVersions.forEach((item) => void deleteVersionRecord(item.id));
   renderVersions();
-  toast("Version saved.");
+  toast(
+    versionPersisted && indexPersisted
+      ? "Version saved."
+      : "Version saved for this session. Anna storage did not persist it.",
+    versionPersisted && indexPersisted ? "ok" : "error",
+  );
   void appendHandoffArtifact(version);
 }
 
@@ -583,10 +600,10 @@ async function appendHandoffArtifact(version) {
 
 async function loadState() {
   try {
-    const res = await app.anna.storage.get({ key: STORAGE_KEY });
-    const value = res?.exists ? res.value : res?.value;
+    let value = await readStorageValue(STORAGE_KEY);
+    if (!value) value = await readStorageValue(LEGACY_STORAGE_KEY);
     if (!value || typeof value !== "object") return;
-    app.versions = Array.isArray(value.versions) ? value.versions : [];
+    app.versions = await hydrateVersions(value.versions);
     app.feedback = value.feedback && typeof value.feedback === "object"
       ? { rating: value.feedback.rating || "", notes: value.feedback.notes || "" }
       : app.feedback;
@@ -602,22 +619,163 @@ async function loadState() {
 }
 
 async function persistState() {
-  if (!app.anna?.storage) return;
+  if (!app.anna?.storage) return false;
   const value = {
-    versions: app.versions,
+    schema: 2,
+    versions: app.versions.map(compactVersionSummary),
     feedback: { ...app.feedback, notes: els.feedbackNotes.value.trim() },
-    last_analysis: app.analysis,
-    last_draft: els.draftText.value,
+    last_analysis: compactAnalysisForStorage(app.analysis),
+    last_draft: limitString(els.draftText.value, 32000),
     target_role: els.targetRole.value.trim(),
-    job_description: els.jobDescription.value.trim(),
+    job_description: limitString(els.jobDescription.value.trim(), 12000),
     selected_perspective: app.selectedPerspective,
     selected_suggestion_ids: Array.from(app.selectedSuggestionIds),
   };
   try {
-    await app.anna.storage.set({ key: STORAGE_KEY, value });
+    await app.anna.storage.set({ key: STORAGE_KEY, value: fitStorageValue(value) });
+    return true;
   } catch {
     /* non-fatal */
+    return false;
   }
+}
+
+async function readStorageValue(key) {
+  if (!app.anna?.storage) return null;
+  const res = await app.anna.storage.get({ key });
+  return res?.exists ? res.value : res?.value;
+}
+
+async function hydrateVersions(items) {
+  if (!Array.isArray(items)) return [];
+  const versions = [];
+  for (const item of items.slice(0, MAX_STORED_VERSIONS)) {
+    if (!item || typeof item !== "object") continue;
+    if (typeof item.text === "string") {
+      versions.push(item);
+      continue;
+    }
+    const detail = await readStorageValue(`${VERSION_STORAGE_PREFIX}${item.id}`);
+    versions.push(detail && typeof detail === "object" ? { ...item, ...detail } : { ...item, text: "" });
+  }
+  return versions;
+}
+
+async function saveVersionRecord(version) {
+  if (!app.anna?.storage) return false;
+  try {
+    await app.anna.storage.set({
+      key: `${VERSION_STORAGE_PREFIX}${version.id}`,
+      value: compactVersionRecord(version),
+    });
+    return true;
+  } catch {
+    try {
+      await app.anna.storage.set({
+        key: `${VERSION_STORAGE_PREFIX}${version.id}`,
+        value: { ...compactVersionRecord(version), text: limitString(version.text, 16000) },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+async function deleteVersionRecord(id) {
+  if (!app.anna?.storage || !id) return;
+  try {
+    await app.anna.storage.delete({ key: `${VERSION_STORAGE_PREFIX}${id}` });
+  } catch {
+    /* best-effort cleanup */
+  }
+}
+
+function compactVersionSummary(version) {
+  return {
+    id: version.id,
+    created_at: version.created_at,
+    title: limitString(version.title, 140),
+    score: version.score,
+    reason: version.reason,
+    accepted_count: Array.isArray(version.accepted_suggestions) ? version.accepted_suggestions.length : 0,
+    feedback: {
+      rating: version.feedback?.rating || "",
+      notes: limitString(version.feedback?.notes || "", 1000),
+    },
+  };
+}
+
+function compactVersionRecord(version) {
+  return {
+    text: limitString(version.text, 36000),
+    accepted_suggestions: (version.accepted_suggestions || []).slice(0, 10).map(compactSuggestionForStorage),
+    feedback: {
+      rating: version.feedback?.rating || "",
+      notes: limitString(version.feedback?.notes || "", 4000),
+    },
+  };
+}
+
+function compactAnalysisForStorage(analysis) {
+  if (!analysis) return null;
+  return {
+    ats_score: clampScore(analysis.ats_score),
+    summary: limitString(analysis.summary, 700),
+    source_note: limitString(analysis.source_note, 300),
+    missing_keywords: toStringArray(analysis.missing_keywords).slice(0, 20),
+    problems: (analysis.problems || []).slice(0, 12).map((item) => ({
+      title: limitString(item.title, 180),
+      detail: limitString(item.detail, 700),
+      severity: limitString(item.severity, 40),
+    })),
+    perspectives: compactPerspectivesForStorage(analysis.perspectives),
+    suggestions: (analysis.suggestions || []).slice(0, 10).map(compactSuggestionForStorage),
+    improved_resume: "",
+    used_llm: Boolean(analysis.used_llm),
+    model: limitString(analysis.model, 120),
+  };
+}
+
+function compactPerspectivesForStorage(perspectives) {
+  const out = {};
+  for (const key of ["recruiter", "ats", "engineer"]) {
+    const raw = perspectives?.[key] || {};
+    out[key] = {
+      verdict: limitString(raw.verdict, 700),
+      findings: toStringArray(raw.findings).slice(0, 6).map((item) => limitString(item, 500)),
+      priorities: toStringArray(raw.priorities).slice(0, 5).map((item) => limitString(item, 300)),
+    };
+  }
+  return out;
+}
+
+function compactSuggestionForStorage(item) {
+  return {
+    id: limitString(item.id, 80),
+    section: limitString(item.section, 80),
+    title: limitString(item.title, 180),
+    reason: limitString(item.reason, 700),
+    rewrite: limitString(item.rewrite, 1800),
+    impact: limitString(item.impact, 80),
+  };
+}
+
+function fitStorageValue(value) {
+  let candidate = value;
+  if (storageBytes(candidate) <= STORAGE_VALUE_SOFT_LIMIT) return candidate;
+  candidate = {
+    ...candidate,
+    last_analysis: candidate.last_analysis ? { ...candidate.last_analysis, suggestions: [], problems: [] } : null,
+  };
+  if (storageBytes(candidate) <= STORAGE_VALUE_SOFT_LIMIT) return candidate;
+  candidate = { ...candidate, last_draft: limitString(candidate.last_draft, 16000), job_description: limitString(candidate.job_description, 6000) };
+  if (storageBytes(candidate) <= STORAGE_VALUE_SOFT_LIMIT) return candidate;
+  return { ...candidate, last_analysis: null, versions: candidate.versions.slice(0, 6) };
+}
+
+function storageBytes(value) {
+  return new TextEncoder().encode(JSON.stringify(value)).length;
 }
 
 function createLocalAnna() {
@@ -800,6 +958,12 @@ function toStringArray(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value.map((item) => String(item)).filter(Boolean);
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function limitString(value, maxLength) {
+  const text = value == null ? "" : String(value);
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 3))}...`;
 }
 
 function clampScore(value) {

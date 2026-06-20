@@ -169,6 +169,7 @@ jobs:
           - { os: macos-14, name: darwin-arm64, python_arch: "" }
           - { os: macos-15-intel, name: darwin-x86_64, python_arch: "" }
           - { os: ubuntu-latest, name: linux-x86_64, python_arch: "" }
+          - { os: windows-latest, name: windows-x86_64, python_arch: "", exe_ext: ".exe" }
     runs-on: ${{ matrix.platform.os }}
     steps:
       - uses: actions/checkout@v4
@@ -178,6 +179,7 @@ jobs:
           architecture: ${{ matrix.platform.python_arch || '' }}
 
       - name: Install build deps + in-repo SDK
+        shell: bash
         run: |
           python -m pip install --upgrade pip pyinstaller
           # The plugins import `executa_sdk`; install the in-repo SDK so
@@ -189,20 +191,24 @@ jobs:
 
       - name: Build binary
         working-directory: examples/${{ matrix.app.app_dir }}/executas/${{ matrix.app.executa_dir }}
+        shell: bash
         env:
           TOOL_ID: ${{ matrix.app.tool_id }}
           ENTRY: ${{ matrix.app.entry }}
+          EXE_EXT: ${{ matrix.platform.exe_ext || '' }}
         run: |
           python -m pip install .
           pyinstaller --onefile --clean --noupx --name "$TOOL_ID" "$ENTRY"
-          test -f "dist/$TOOL_ID"
+          test -f "dist/$TOOL_ID$EXE_EXT"
 
       - name: Smoke test (describe)
         working-directory: examples/${{ matrix.app.app_dir }}/executas/${{ matrix.app.executa_dir }}
+        shell: bash
         env:
           TOOL_ID: ${{ matrix.app.tool_id }}
+          EXE_EXT: ${{ matrix.platform.exe_ext || '' }}
         run: |
-          out="$(printf '%s\n' '{"jsonrpc":"2.0","method":"describe","id":1}' | "./dist/$TOOL_ID" 2>/dev/null || true)"
+          out="$(printf '%s\n' '{"jsonrpc":"2.0","method":"describe","id":1}' | "./dist/$TOOL_ID$EXE_EXT" 2>/dev/null || true)"
           echo "describe → $out"
           if printf '%s' "$out" | python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('result') or {}; assert r.get('tools') or r.get('display_name') or r.get('name')" 2>/dev/null; then
             echo "✅ protocol smoke test passed"
@@ -211,27 +217,35 @@ jobs:
           fi
 
       - name: Package (tar.gz + sha256)
-        working-directory: examples/${{ matrix.app.app_dir }}/executas/${{ matrix.app.executa_dir }}/dist
+        working-directory: examples/${{ matrix.app.app_dir }}/executas/${{ matrix.app.executa_dir }}
+        shell: bash
         env:
           TOOL_ID: ${{ matrix.app.tool_id }}
           PLATFORM: ${{ matrix.platform.name }}
           VERSION: ${{ matrix.app.version }}
+          EXE_EXT: ${{ matrix.platform.exe_ext || '' }}
         run: |
-          asset="$TOOL_ID-$PLATFORM.tar.gz"
-          stage="package-$PLATFORM"
-          rm -rf "$stage"
-          mkdir -p "$stage/bin"
-          cp "$TOOL_ID" "$stage/bin/$TOOL_ID"
-          chmod 0755 "$stage/bin/$TOOL_ID"
-          python3 - "$stage/manifest.json" "$TOOL_ID" "$VERSION" <<'PY'
+          python - "$TOOL_ID" "$PLATFORM" "$VERSION" "$EXE_EXT" <<'PY'
           import json
+          import hashlib
           import sys
+          import tarfile
+          import zipfile
+          import shutil
           from pathlib import Path
 
-          manifest_path = Path(sys.argv[1])
-          tool_id = sys.argv[2]
-          version = sys.argv[3]
-          entrypoint = f"bin/{tool_id}"
+          tool_id, platform, version, exe_ext = sys.argv[1:5]
+          stage = Path("dist") / f"package-{platform}"
+          shutil.rmtree(stage, ignore_errors=True)
+          (stage / "bin").mkdir(parents=True)
+
+          binary_name = f"{tool_id}{exe_ext}"
+          src = Path("dist") / binary_name
+          dst = stage / "bin" / binary_name
+          shutil.copy2(src, dst)
+          dst.chmod(0o755)
+
+          entrypoint = f"bin/{binary_name}"
           manifest = {
               "name": tool_id,
               "version": version,
@@ -242,10 +256,35 @@ jobs:
                   }
               },
           }
-          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          (stage / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+          if platform.startswith("windows-"):
+              asset = Path("dist") / f"{tool_id}-{platform}.zip"
+              with zipfile.ZipFile(asset, "w", zipfile.ZIP_DEFLATED) as zf:
+                  for path in sorted(stage.rglob("*")):
+                      if path.is_file():
+                          zf.write(path, path.relative_to(stage).as_posix())
+          else:
+              asset = Path("dist") / f"{tool_id}-{platform}.tar.gz"
+              with tarfile.open(asset, "w:gz") as tf:
+                  for path in sorted(stage.rglob("*")):
+                      info = tf.gettarinfo(str(path), arcname=path.relative_to(stage).as_posix())
+                      if path.is_file() and path.name == binary_name:
+                          info.mode = 0o755
+                      if path.is_file():
+                          with path.open("rb") as fh:
+                              tf.addfile(info, fh)
+                      else:
+                          tf.addfile(info)
+
+          digest = hashlib.sha256(asset.read_bytes()).hexdigest()
+          asset.with_suffix(asset.suffix + ".sha256").write_text(f"{digest}  {asset.name}\n", encoding="utf-8")
           PY
-          tar czf "$asset" -C "$stage" .
-          shasum -a 256 "$asset" > "$asset.sha256"
+          if [[ "$PLATFORM" == windows-* ]]; then
+            asset="$TOOL_ID-$PLATFORM.zip"
+          else
+            asset="$TOOL_ID-$PLATFORM.tar.gz"
+          fi
           echo "ASSET_DIR=examples/${{ matrix.app.app_dir }}/executas/${{ matrix.app.executa_dir }}/dist" >> "$GITHUB_ENV"
           echo "ASSET=$asset" >> "$GITHUB_ENV"
 
