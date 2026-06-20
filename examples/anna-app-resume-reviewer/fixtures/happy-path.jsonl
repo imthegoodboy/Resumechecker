@@ -1,0 +1,11 @@
+{"t":0,"kind":"meta","harness_version":"0.1","session_id":"resume-reviewer-dev","window_uuid":"resume-reviewer-window"}
+{"t":1,"kind":"req","id":1,"ns":"window","method":"hello","args":{}}
+{"t":2,"kind":"res","id":1,"ok":true,"result":{"wid":"resume-reviewer-window","user_id":1}}
+{"t":20,"kind":"req","id":2,"ns":"storage","method":"get","args":{"key":"resume-reviewer:v1"}}
+{"t":21,"kind":"res","id":2,"ok":true,"result":{"exists":false,"value":null}}
+{"t":120,"kind":"req","id":3,"ns":"tools","method":"invoke","args":{"tool_id":"tool-test-resume-reviewer-12345678","method":"analyze_resume","args":{"resume_text":"Built a student portal with JavaScript and SQL.","target_role":"Frontend engineer intern","perspectives":["recruiter","ats","engineer"]}}}
+{"t":121,"kind":"res","id":3,"ok":true,"result":{"success":true,"tool":"analyze_resume","data":{"analysis":{"ats_score":82,"used_llm":false,"summary":"Frontend engineer intern match is strong after two keyword edits.","source_note":"fixture","missing_keywords":["react","testing"],"problems":[{"title":"Impact is not quantified","detail":"Add numbers to project bullets.","severity":"high"}],"perspectives":{"recruiter":{"verdict":"Readable and close to first-pass ready.","findings":["Move the strongest project higher."],"priorities":["Tighten summary"]},"ats":{"verdict":"Keyword match needs two role terms.","findings":["Missing keyword: react","Missing keyword: testing"],"priorities":["Add truthful target terms"]},"engineer":{"verdict":"Technical bullets need implementation detail.","findings":["Name stack and tradeoffs."],"priorities":["Rewrite project bullets"]}},"suggestions":[{"id":"s1","section":"Summary","title":"State target fit","reason":"Recruiters scan the top third.","rewrite":"Frontend engineer intern with React project evidence.","impact":"recruiter"}],"improved_resume":"Improved resume draft"}}}}
+{"t":160,"kind":"req","id":4,"ns":"storage","method":"set","args":{"key":"resume-reviewer:v1","value":{"versions":[{"id":"v1","title":"Frontend engineer intern","score":82}]}}}
+{"t":161,"kind":"res","id":4,"ok":true,"result":{"ok":true}}
+{"t":190,"kind":"req","id":5,"ns":"chat","method":"append_artifact","args":{"title":"Resume Reviewer version","mime_type":"text/markdown"}}
+{"t":191,"kind":"res","id":5,"ok":true,"result":{"ok":true}}

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>AI Resume Reviewer</title>
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell" id="app-shell">
+      <header class="topbar">
+        <div class="brand" aria-label="AI Resume Reviewer">
+          <span class="brand__mark" aria-hidden="true">RR</span>
+          <span class="brand__text">AI Resume Reviewer</span>
+        </div>
+        <div class="topbar__status">
+          <span class="status-dot" id="conn-dot" aria-hidden="true"></span>
+          <span id="runtime-status">Connecting to Anna</span>
+        </div>
+      </header>
+
+      <section class="workspace" aria-label="Resume review workspace">
+        <aside class="rail rail--intake" aria-label="Resume intake">
+          <div class="rail__head">
+            <h1>Review before applying</h1>
+            <p>Upload a resume, name the target role, and approve only the changes you want to keep.</p>
+          </div>
+
+          <form class="intake-form" id="review-form">
+            <div class="field">
+              <label for="resume-file">Upload resume</label>
+              <label class="file-drop" for="resume-file" id="file-drop">
+                <input id="resume-file" type="file" accept=".txt,.md,.pdf,.docx,.json,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <span class="file-drop__main" id="file-label">Choose PDF, DOCX, TXT, or MD</span>
+                <span class="file-drop__meta" id="file-meta">2 MB max for local preview</span>
+              </label>
+            </div>
+
+            <div class="field">
+              <label for="resume-text">Resume text</label>
+              <textarea id="resume-text" rows="9" placeholder="Paste resume text when the upload is scanned poorly."></textarea>
+              <p class="field__help" id="resume-help">Uploaded files are read locally and sent to the bundled Anna tool.</p>
+            </div>
+
+            <div class="field">
+              <label for="target-role">Target role</label>
+              <input id="target-role" type="text" placeholder="Frontend engineer intern" autocomplete="off" />
+            </div>
+
+            <div class="field">
+              <label for="job-description">Job description or keywords</label>
+              <textarea id="job-description" rows="5" placeholder="Paste the role description or the skills the posting names."></textarea>
+            </div>
+
+            <fieldset class="perspective-picker">
+              <legend>Review perspectives</legend>
+              <label><input type="checkbox" name="perspective" value="recruiter" checked /> Recruiter</label>
+              <label><input type="checkbox" name="perspective" value="ats" checked /> ATS system</label>
+              <label><input type="checkbox" name="perspective" value="engineer" checked /> Senior engineer</label>
+            </fieldset>
+
+            <button class="btn btn--primary" id="review-btn" type="submit">
+              <span class="btn__label">Review resume</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+        </aside>
+
+        <section class="review-surface" aria-label="Review results">
+          <div class="review-empty" id="empty-state">
+            <div class="review-empty__rule" aria-hidden="true"></div>
+            <h2>Run the first review.</h2>
+            <p>The result will separate ATS gaps from human review problems, then produce an editable draft.</p>
+          </div>
+
+          <div class="review-results" id="review-results" hidden>
+            <header class="score-strip">
+              <div class="score-ring" id="score-ring" aria-label="ATS score">
+                <span id="score-value">--</span>
+              </div>
+              <div class="score-strip__copy">
+                <p class="overline">ATS score</p>
+                <h2 id="analysis-summary">Resume analysis</h2>
+                <p id="analysis-meta">No review has run yet.</p>
+              </div>
+            </header>
+
+            <nav class="tabs" aria-label="Reviewer perspective tabs">
+              <button class="tab is-active" type="button" data-perspective="recruiter">Recruiter</button>
+              <button class="tab" type="button" data-perspective="ats" aria-label="ATS system perspective">ATS</button>
+              <button class="tab" type="button" data-perspective="engineer" aria-label="Senior engineer perspective">Engineer</button>
+            </nav>
+
+            <section class="perspective-view" id="perspective-view" aria-live="polite"></section>
+
+            <section class="analysis-grid">
+              <div class="analysis-block">
+                <div class="block-head">
+                  <h3>Missing keywords</h3>
+                  <span id="keyword-count">0</span>
+                </div>
+                <div class="keyword-list" id="keyword-list"></div>
+              </div>
+
+              <div class="analysis-block">
+                <div class="block-head">
+                  <h3>Priority problems</h3>
+                  <span id="problem-count">0</span>
+                </div>
+                <ol class="problem-list" id="problem-list"></ol>
+              </div>
+            </section>
+
+            <section class="suggestions">
+              <div class="block-head block-head--split">
+                <div>
+                  <h3>Approve changes</h3>
+                  <p>Selected suggestions are saved with the next version.</p>
+                </div>
+                <button class="btn btn--quiet" id="select-all-btn" type="button">Select all</button>
+              </div>
+              <div class="suggestion-list" id="suggestion-list"></div>
+            </section>
+
+            <section class="draft-editor">
+              <div class="block-head block-head--split">
+                <div>
+                  <h3>Improved draft</h3>
+                  <p>Edit before saving. The original upload is not changed.</p>
+                </div>
+                <button class="btn btn--quiet" id="copy-draft-btn" type="button">Copy draft</button>
+              </div>
+              <textarea id="draft-text" rows="12" spellcheck="true"></textarea>
+            </section>
+          </div>
+        </section>
+
+        <aside class="rail rail--history" aria-label="Versions and feedback">
+          <section class="side-section">
+            <div class="block-head">
+              <h2>Version history</h2>
+              <span id="version-count">0</span>
+            </div>
+            <div class="version-list" id="version-list" aria-live="polite"></div>
+            <button class="btn btn--primary btn--full" id="save-version-btn" type="button" disabled>Save version</button>
+          </section>
+
+          <section class="side-section">
+            <div class="block-head">
+              <h2>Feedback</h2>
+            </div>
+            <div class="feedback-row" role="group" aria-label="Rate this review">
+              <button class="icon-choice" type="button" data-feedback="useful" aria-label="Mark review useful">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11v9H4v-9h3Zm4-7-1 7h7.2a2 2 0 0 1 2 2.3l-.8 5a2 2 0 0 1-2 1.7H9V10l2-6Z"/></svg>
+              </button>
+              <button class="icon-choice" type="button" data-feedback="needs-work" aria-label="Mark review needs work">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 13V4H4v9h3Zm4 7-1-7h7.2a2 2 0 0 0 2-2.3l-.8-5A2 2 0 0 0 16.4 4H9v10l2 6Z"/></svg>
+              </button>
+            </div>
+            <label class="field field--compact" for="feedback-notes">
+              <span>Notes for next review</span>
+              <textarea id="feedback-notes" rows="5" placeholder="What felt useful or missing?"></textarea>
+            </label>
+            <button class="btn btn--quiet btn--full" id="save-feedback-btn" type="button">Save feedback</button>
+          </section>
+        </aside>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    </main>
+
+    <script src="anna-tool-ids.js" defer></script>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

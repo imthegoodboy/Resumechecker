@@ -1,0 +1,24 @@
+[project]
+name = "tool-test-resume-reviewer-12345678"
+version = "0.1.0"
+description = "Resume Reviewer Executa for Anna Apps: extracts resumes and produces structured review feedback via Anna host sampling with deterministic fallback."
+requires-python = ">=3.10"
+authors = [{ name = "Anna Developer" }]
+license = { text = "MIT" }
+dependencies = [
+  "executa-sdk>=0.1.0"
+]
+
+[project.scripts]
+"tool-test-resume-reviewer-12345678" = "resume_reviewer_plugin:main"
+
+[tool.uv.sources]
+executa-sdk = { path = "../../../../sdk/python", editable = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+only-include = ["resume_reviewer_plugin.py"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

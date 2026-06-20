@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Resume Reviewer">
+  <rect width="64" height="64" rx="14" fill="oklch(97% 0.009 198)"/>
+  <path d="M18 14h22l8 8v28H18z" fill="none" stroke="oklch(17% 0.015 198)" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M39 14v10h9" fill="none" stroke="oklch(17% 0.015 198)" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M25 30h17M25 38h12M25 46h15" stroke="oklch(49% 0.135 190)" stroke-width="3" stroke-linecap="round"/>
+</svg>

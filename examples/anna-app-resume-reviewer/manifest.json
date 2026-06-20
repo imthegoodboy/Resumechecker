@@ -1,0 +1,62 @@
+{
+  "schema": 2,
+  "permissions": [
+    "tools.invoke",
+    "storage.read",
+    "storage.write",
+    "chat.write_message",
+    "chat.append_artifact",
+    "ui.svg"
+  ],
+  "required_executas": [
+    {
+      "tool_id": "bundled:resume-reviewer",
+      "min_version": "0.1.0",
+      "version": "latest"
+    }
+  ],
+  "optional_executas": [],
+  "system_prompt_addendum": "The user has the AI Resume Reviewer Anna App open. Use the bundled resume-reviewer tool as the source of truth for resume analysis. It reviews uploaded or pasted resume content from recruiter, ATS, and senior-engineer perspectives, produces an ATS score, missing keywords, prioritized issues, suggested changes, and a safer improved draft. Prefer structured, actionable feedback over generic resume advice.",
+  "user_message_prefix_template": "[AI Resume Reviewer] {user_message}",
+  "tags": ["resume", "career", "ats", "job-search", "students"],
+  "ui": {
+    "bundle": {
+      "format": "static-spa",
+      "entry": "index.html",
+      "external_origins": []
+    },
+    "views": [
+      {
+        "name": "main",
+        "title": "AI Resume Reviewer",
+        "default": true,
+        "entry": "index.html",
+        "min_size": { "w": 360, "h": 620 },
+        "default_size": { "w": 1180, "h": 820 },
+        "max_size": { "w": 1440, "h": 960 },
+        "resizable": true,
+        "movable": true,
+        "single_instance": true,
+        "icon": "icon.svg"
+      }
+    ],
+    "host_api": {
+      "tools": ["required:bundled:resume-reviewer"],
+      "storage": ["get", "set", "delete", "list"],
+      "chat": ["write_message", "append_artifact"],
+      "window": ["set_title"]
+    },
+    "csp_overrides": {
+      "img-src": ["'self'", "data:", "blob:"],
+      "font-src": ["'self'", "data:"],
+      "style-src": ["'self'"],
+      "script-src": ["'self'"]
+    },
+    "state_merge": "last_writer_wins"
+  },
+  "dev": {
+    "fixtures": ["fixtures/*.jsonl"],
+    "seed_storage": {},
+    "user_id": 1
+  }
+}

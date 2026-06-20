@@ -1,0 +1,9 @@
+node_modules/
+.anna/
+.venv/
+dist-anna/
+test-results/
+anna-dev-*.log
+*.pyc
+__pycache__/
+executas/*/.venv/

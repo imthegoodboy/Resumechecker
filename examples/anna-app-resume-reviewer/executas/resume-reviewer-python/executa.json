@@ -1,0 +1,19 @@
+{
+  "slug": "resume-reviewer",
+  "name": "Resume Reviewer",
+  "version": "0.1.0",
+  "executa_type": "tool",
+  "description": "Analyzes resumes for ATS match, recruiter screen quality, and senior-engineer evidence using Anna host sampling with deterministic fallback.",
+  "tool_id": "tool-test-resume-reviewer-12345678",
+  "type": "python",
+  "enabled": true,
+  "distribution": {
+    "active": "local",
+    "profiles": {
+      "local": {
+        "type": "local",
+        "supports_protocol": true
+      }
+    }
+  }
+}
