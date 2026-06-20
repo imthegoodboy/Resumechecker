@@ -22,21 +22,29 @@
         "binary_urls": {
           "darwin-arm64": {
             "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.2/tool-nikku696969-resume-reviewer-cvkbfasx-darwin-arm64.tar.gz",
+            "sha256": "7d8d0de3f1aca0913668b4c922763dd70ced45e4e018f3b47362bf751813dd5d",
+            "size": 19734455,
             "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
           },
           "darwin-x86_64": {
             "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.2/tool-nikku696969-resume-reviewer-cvkbfasx-darwin-x86_64.tar.gz",
+            "sha256": "42f944c19368c2034794c1a8bd6e1ee858b78be5bae66036978ca04d6f79732f",
+            "size": 18608884,
             "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
           },
           "linux-x86_64": {
             "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.2/tool-nikku696969-resume-reviewer-cvkbfasx-linux-x86_64.tar.gz",
+            "sha256": "ba7befd2f371605faa4f93726e1606d6d9ebef2e6f6497de7db6c77f7be40913",
+            "size": 34012781,
             "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
           },
           "windows-x86_64": {
             "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.2/tool-nikku696969-resume-reviewer-cvkbfasx-windows-x86_64.zip",
+            "sha256": "139b212c3ecec0bda3d11f429eadc77d833ebcccf7b1eda14fdeb4ff7518440c",
+            "size": 20358579,
             "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx.exe",
             "format": "zip"
           }
