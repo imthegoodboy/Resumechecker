@@ -1,5 +1,5 @@
 {
-  "date": "2026-06-20",
+  "date": "2026-06-21",
   "project": "examples/anna-app-resume-reviewer",
   "framework": "vanilla static Anna bundle",
   "font_stack": "system Aptos/Segoe UI fallback tokens in bundle/tokens.css",
@@ -9,7 +9,7 @@
   "preserve": [
     "Anna static bundle structure",
     "existing token split between tokens.css and style.css",
-    "bundled Executa tool flow",
+    "optional Anna LLM with deterministic inline fallback",
     "separate Review, Results, Versions, and Feedback pages"
   ]
 }

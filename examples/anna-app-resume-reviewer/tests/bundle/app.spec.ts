@@ -13,6 +13,11 @@ function defaultMocks() {
     "chat.write_message": () => ({ ok: true }),
     "chat.append_artifact": () => ({ ok: true }),
     "window.set_title": () => ({ ok: true }),
+    "llm.complete": () => ({
+      role: "assistant",
+      content: { type: "text", text: '{"ats_score":82,"summary":"Mock review","missing_keywords":[],"problems":[],"suggestions":[]}' },
+      model: "mock-anna",
+    }),
   };
 }
 
@@ -43,12 +48,11 @@ describe("resume-reviewer Anna bundle contract", () => {
     expect(harness.calls.last()?.outcome).toBe("denied");
   });
 
-  it("blocks undeclared direct llm.complete access", async () => {
-    await expect(
-      harness.runtime.call("llm", "complete", {
-        messages: [{ role: "user", content: { type: "text", text: "hi" } }],
-      }),
-    ).rejects.toBeInstanceOf(HostApiError);
-    expect(harness.calls.last()?.outcome).toBe("denied");
+  it("allows optional direct llm.complete for Anna-hosted review", async () => {
+    const res = await harness.runtime.call("llm", "complete", {
+      messages: [{ role: "user", content: { type: "text", text: "hi" } }],
+    });
+    expect(res).toMatchObject({ model: "mock-anna" });
+    expect(harness.calls.lastOf("llm.complete")?.outcome).toBe("ok");
   });
 });

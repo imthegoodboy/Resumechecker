@@ -2,7 +2,31 @@
 
 # Anna Executa Plugin Examples
 
-This repository provides **complete examples and development documentation** for Anna Executa plugins, covering Python, Node.js, and Go, with both Local and Binary distribution methods.
+This repository provides **complete examples and development documentation** for Anna Executa plugins and Anna Apps, covering Python, Node.js, and Go, with both Local and Binary distribution methods.
+
+## Featured App: AI Resume Reviewer
+
+[`examples/anna-app-resume-reviewer`](examples/anna-app-resume-reviewer/) is the production-focused app in this repo. It helps students, freshers, and job seekers review a resume before applying.
+
+What it does:
+
+- Reads pasted resumes plus TXT, MD, JSON, selectable-text PDF, and supported DOCX uploads.
+- Reviews the resume as a recruiter, ATS system, and senior engineer.
+- Uses Anna-hosted `llm.complete` when the grant is available.
+- Falls back to deterministic inline analysis when LLM or local Agent services are unavailable.
+- Saves improved drafts, approved suggestions, feedback, and version history through Anna app storage.
+- Runs without requiring users to install Python, `uv`, source code, or a local Executa Agent.
+
+Quick check:
+
+```bash
+cd examples/anna-app-resume-reviewer
+npm install
+npm run validate
+npm test
+npm run fixture:verify
+npm run test:e2e
+```
 
 ## What is Executa?
 
@@ -35,7 +59,8 @@ anna-executa-examples/
 │   │   └── Makefile
 │   ├── multifile-binary/                # Multi-file Binary distribution examples
 │   │   └── python-pyinstaller-onedir/   # PyInstaller --onedir + manifest.json
-│   └── anna-app-focus-flow/             # ⭐ Complete Anna App — UI bundle + skill + tool plugin
+│   ├── anna-app-resume-reviewer/        # ⭐ Production Anna App — resume review, optional Anna LLM, inline fallback
+│   ├── anna-app-focus-flow/             # ⭐ Complete Anna App — UI bundle + skill + tool plugin
 │                                        #     The tool plugin ships in three flavours:
 │                                        #     focus-session-{python,node,go}; pick one via
 │                                        #     `executa.json` or `--executa` CLI flag.
@@ -210,6 +235,7 @@ python examples/python/storage-notebook/storage_notebook.py
 - [Reverse Sampling](https://anna.partners/developers/reference/executa-sampling) — Plugins requesting LLM completions from the host
 - [Persistent Storage](https://anna.partners/developers/reference/executa-persistent-storage) — Per-user / per-app KV + object storage hosted by Anna
 - [Common Pitfalls](https://anna.partners/developers/reference/executa-pitfalls) — Read this first when a plugin shows as "Stopped"
+- [Anna App Example — AI Resume Reviewer](examples/anna-app-resume-reviewer/README.md) — Production-ready Anna App: optional Anna LLM review, inline fallback, storage-backed versions, and polished UI
 - [Anna App Example — Focus Flow](examples/anna-app-focus-flow/README.md) — End-to-end Anna App: 1 tool + 1 skill + premium UI bundle + full app manifest
 
 ## License

@@ -55,6 +55,19 @@ async function main() {
   await frame.locator("#save-feedback-btn").click();
   await expectText(frame, "#toast", (text) => text.includes("Feedback saved"));
 
+  await frame.locator('button[data-page="review"]').click();
+  const unreadablePdfPath = writeUnreadablePdf();
+  await frame.locator("#resume-file").setInputFiles(unreadablePdfPath);
+  await frame.locator("#resume-text").fill(
+    "Manual Candidate\nBuilt Python API services with SQL, testing, accessibility documentation, and measurable release notes.",
+  );
+  await frame.locator("#target-role").fill("Backend engineer intern");
+  await frame.locator("#job-description").fill("Python internship using APIs, SQL, testing, documentation, and measurable product work.");
+  await frame.locator("#review-btn").click();
+
+  await waitForReviewResult(frame);
+  await expectText(frame, "#analysis-meta", (text) => text.includes("inline text review"));
+
   for (const width of [320, 375, 414, 768]) {
     await page.setViewportSize({ width, height: width === 768 ? 900 : 820 });
     const mobileFrame = await waitForAppFrame(page);
@@ -168,6 +181,13 @@ function writeResumePdf() {
     "Built React dashboard with JavaScript, TypeScript, testing, accessibility, and API integration.",
     "Improved page performance by 28 percent and wrote Vitest coverage.",
   ]));
+  return file;
+}
+
+function writeUnreadablePdf() {
+  const dir = mkdtempSync(join(tmpdir(), "resume-reviewer-e2e-bad-pdf-"));
+  const file = join(dir, "scanned-export.pdf");
+  writeFileSync(file, Buffer.from("%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n", "ascii"));
   return file;
 }
 

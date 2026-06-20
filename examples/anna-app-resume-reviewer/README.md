@@ -1,20 +1,59 @@
 # AI Resume Reviewer
 
-An Anna App that reviews resumes from three perspectives: recruiter, ATS system, and senior engineer. The production app runs the core review flow inline in the browser, so it does not require an online local Executa Agent.
+AI Resume Reviewer is a production-ready Anna App for students, freshers, and job seekers who want concrete resume feedback before applying. It reviews a resume against a target role from three angles: recruiter screening, ATS keyword matching, and senior-engineer evidence quality.
 
-## Features
+The app is designed to be judge-safe: it uses Anna runtime services when available, but the core review flow still works without a local Anna Agent or bundled Executa install.
+
+## What It Does
 
 - Upload or paste a resume.
-- Parse TXT, MD, JSON, selectable-text PDF exports, and supported DOCX files inline.
-- Add a target role or job description.
-- Generate an ATS score, missing keywords, priority problems, and section-level suggestions.
-- Switch between recruiter, ATS, and senior-engineer review perspectives.
-- Approve selected suggestions and save edited resume versions.
-- Persist version history and feedback in Anna storage.
-- Attach saved-version handoff notes to Anna chat when the grant is available.
-- Work in production without a local Agent through deterministic inline analysis.
+- Read TXT, MD, JSON, selectable-text PDF exports, and supported DOCX files inline.
+- Add a target role plus job-description keywords.
+- Use `anna.llm.complete` for richer review when the Anna host grant is available.
+- Fall back to deterministic inline analysis when LLM, Agent, or network services are unavailable.
+- Produce an ATS score, missing keywords, priority issues, reviewer perspectives, and suggested rewrites.
+- Let users approve changes, edit the improved draft, and save version history.
+- Persist versions and feedback through Anna app storage.
+- Attach saved-version handoff notes to Anna chat when the chat grant is available.
 
-## Run
+## Production Architecture
+
+The production manifest does not require `tools.invoke` or any bundled Executa:
+
+```json
+{
+  "required_executas": [],
+  "ui": {
+    "host_api": {
+      "llm": ["complete"],
+      "storage": ["get", "set", "delete", "list"],
+      "chat": ["write_message", "append_artifact"],
+      "window": ["set_title"]
+    }
+  }
+}
+```
+
+Review flow:
+
+```text
+resume upload / paste
+  -> inline text extraction
+  -> optional Anna LLM structured review
+  -> deterministic inline fallback if LLM is unavailable
+  -> editable draft + versions in Anna storage
+```
+
+The legacy `executas/resume-reviewer-python` tool remains in the repo as a tested Executa implementation and binary-distribution reference, but the live app no longer depends on a local Agent being online.
+
+## UI Flow
+
+1. **Review**: upload or paste the resume, add target role details, and choose review perspectives.
+2. **Results**: inspect ATS score, missing keywords, problems, perspective tabs, and suggested rewrites.
+3. **Versions**: save approved drafts and restore prior versions.
+4. **Feedback**: store a quick quality signal and notes for the next pass.
+
+## Run Locally
 
 ```powershell
 cd examples\anna-app-resume-reviewer
@@ -32,32 +71,23 @@ Offline preview:
 anna-app dev --port 5184 --no-llm
 ```
 
-## How It Works
-
-The UI extracts supported uploads inside the iframe, then runs deterministic analysis against the pasted or extracted resume text. This avoids the Anna production failure mode where app execution is blocked because no local Executa Agent is online for the user.
-
-Version history and feedback use a compact storage index plus per-version draft
-records so saved resumes stay below Anna's per-value storage limit:
-
-```js
-anna.storage.get({ key: "resume-reviewer:v2" });
-anna.storage.set({ key: "resume-reviewer:v2", value: compactIndex });
-anna.storage.set({ key: "resume-reviewer:version:<id>", value: draftRecord });
-```
-
 ## Privacy
 
-Resume content is processed inside the app iframe for the core review flow. The app does not require OpenAI keys, third-party credentials, or a local Executa Agent. Local version history is stored through Anna app storage for the current app/user scope.
+Resume text is processed inside the Anna app iframe for extraction and fallback review. When Anna LLM is available, the app sends the pasted or extracted resume text and target-role context to Anna's hosted LLM interface. The app does not ask for OpenAI keys, provider keys, or third-party credentials. Saved drafts and feedback use Anna app storage scoped to the current app/user.
+
+## Limitations
+
+- Scanned or image-only PDFs do not contain selectable text. Use OCR first or paste the resume text.
+- DOCX support covers standard zipped Word documents with `word/document.xml`; unusual encrypted or corrupted files should be pasted as text.
+- LLM output is advisory. Users should review every suggested rewrite before applying.
 
 ## Production Checklist
 
-- `npm test`
 - `npm run validate`
+- `npm test`
 - `npm run fixture:verify`
 - `npm run test:e2e`
 - `npm audit --json`
 - `python -m py_compile executas\resume-reviewer-python\resume_reviewer_plugin.py`
-- `anna-app dev --port 5184 --llm-account https://anna.partners`
-- Check desktop and mobile widths.
-- Confirm upload, review, approve, save version, restore version, and feedback flows.
-- Use OCR or a selectable-text export for scanned/image-only PDFs.
+- Desktop plus 320, 375, 414, and 768 px responsive checks.
+- Confirm upload, bad-PDF pasted-text fallback, review, approve, save version, restore version, feedback, and Anna storage flows.

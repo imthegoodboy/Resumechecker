@@ -1,4 +1,4 @@
-/* Hallmark · macrostructure: Workspace Ledger · tone: product/editorial · anchor hue: teal */
+/* Hallmark · macrostructure: Workspace Ledger · tone: technical/editorial · anchor hue: teal · contrast: pass (46-50) · mobile: pass (36, 59, 61-69) */
 @import "./tokens.css";
 
 *,
@@ -54,6 +54,8 @@ button:focus {
 }
 
 .app-shell {
+  position: relative;
+  isolation: isolate;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -61,6 +63,25 @@ button:focus {
   width: min(100%, 88rem);
   margin-inline: auto;
   padding: var(--space-lg) var(--space-xl) var(--space-xl);
+}
+
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: var(--z-toast);
+  width: min(34rem, 72vw);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-accent), var(--color-success), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-110vw);
+}
+
+.app-shell.is-busy::before {
+  opacity: 1;
+  animation: review-scan 1400ms var(--ease-in-out) infinite;
 }
 
 .topbar {
@@ -135,6 +156,10 @@ button:focus {
 .page-tab.is-active {
   border-color: var(--color-accent);
   color: var(--color-ink);
+}
+
+.page-tab:active {
+  transform: translateY(1px);
 }
 
 .topbar__status {
@@ -260,6 +285,10 @@ button:focus {
   gap: var(--space-xs);
 }
 
+.field__help {
+  min-height: 1lh;
+}
+
 .field input,
 .field textarea,
 .draft-editor textarea {
@@ -315,6 +344,7 @@ button:focus {
 }
 
 .file-drop {
+  position: relative;
   display: grid;
   gap: var(--space-2xs);
   min-height: 5rem;
@@ -324,10 +354,25 @@ button:focus {
   border-left: 3px solid var(--color-accent);
   background: transparent;
   cursor: pointer;
+  overflow: clip;
   transition:
     background-color var(--dur-short) var(--ease-out),
     border-color var(--dur-short) var(--ease-out),
     transform var(--dur-micro) var(--ease-out);
+}
+
+.file-drop::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 0.2rem;
+  background: var(--color-success);
+  opacity: 0;
+  transform: translateY(-100%);
+  transition:
+    opacity var(--dur-short) var(--ease-out),
+    transform var(--dur-long) var(--ease-out);
 }
 
 .file-drop input {
@@ -352,6 +397,11 @@ button:focus {
 @media (hover: hover) and (pointer: fine) {
   .file-drop:hover {
     background: var(--color-accent-wash);
+  }
+
+  .file-drop:hover::before {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -468,6 +518,26 @@ button:focus {
   }
 }
 
+@keyframes review-scan {
+  0% {
+    transform: translateX(-110vw);
+  }
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+@keyframes results-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-sm));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .review-empty {
   display: grid;
   align-content: center;
@@ -486,6 +556,7 @@ button:focus {
   display: grid;
   gap: var(--space-xl);
   padding-block: var(--space-xl);
+  animation: results-reveal var(--dur-long) var(--ease-out);
 }
 
 .score-strip {
@@ -561,12 +632,28 @@ button:focus {
   font-weight: 800;
   padding: 0 var(--space-md);
   white-space: nowrap;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out);
 }
 
 .tab.is-active {
   background: var(--color-ink);
   border-color: var(--color-ink);
   color: var(--color-paper);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    border-color: var(--color-rule-strong);
+    color: var(--color-ink);
+  }
+}
+
+.tab:active {
+  transform: translateY(1px);
 }
 
 .perspective-view {
@@ -936,5 +1023,20 @@ button:focus {
 
   .button-row .btn {
     flex: 1 1 10rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .app-shell.is-busy::before {
+    transform: none;
   }
 }

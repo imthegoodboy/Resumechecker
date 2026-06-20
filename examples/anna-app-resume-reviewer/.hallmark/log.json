@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-06-21",
+    "macrostructure": "Workspace Ledger",
+    "theme": "custom",
+    "theme_axes": "warm paper / system product type / teal accent",
+    "enrichment": "stateful scan rail",
+    "brief": "Final judge-ready polish for AI Resume Reviewer with optional Anna LLM and inline fallback."
+  },
+  {
     "date": "2026-06-20",
     "macrostructure": "Workspace Ledger",
     "theme": "custom",

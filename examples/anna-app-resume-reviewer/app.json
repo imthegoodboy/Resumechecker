@@ -1,9 +1,9 @@
 {
   "slug": "resume-reviewer",
   "name": "AI Resume Reviewer",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "tagline": "Review resumes as a recruiter, ATS system, and senior engineer before applying.",
-  "description": "AI Resume Reviewer is an Anna App for students, freshers, and job seekers who need concrete resume feedback before applying. Upload or paste a resume, add a target role or job description, then review the output through recruiter, ATS, and senior-engineer perspectives.\n\nWhat's inside:\n\n- Inline resume intake for text, markdown, selectable-text PDF, JSON, and supported DOCX files.\n- ATS score, missing keywords, priority problems, and section-level suggestions.\n- Reviewer perspectives for recruiter screening, ATS matching, and senior technical review.\n- Approval workflow that saves accepted changes as versions.\n- Persistent version history and feedback notes through Anna storage.\n\nThe app now runs its core review flow inline in the browser, so users can review resumes even when no local Anna Executa Agent is online.",
+  "description": "AI Resume Reviewer is an Anna App for students, freshers, and job seekers who need concrete resume feedback before applying. Upload or paste a resume, add a target role or job description, then review the output through recruiter, ATS, and senior-engineer perspectives.\n\nWhat's inside:\n\n- Inline resume intake for text, markdown, selectable-text PDF, JSON, and supported DOCX files.\n- Optional Anna LLM review when the host grant is available, with deterministic inline fallback when host LLM completion is unavailable or slow.\n- ATS score, missing keywords, priority problems, and section-level suggestions.\n- Reviewer perspectives for recruiter screening, ATS matching, and senior technical review.\n- Approval workflow that saves accepted changes as versions.\n- Persistent version history and feedback notes through Anna storage.\n\nThe app is production-safe for judging because it does not require a local Executa Agent to complete the core review flow.",
   "category": "productivity",
   "logo_url": "https://raw.githubusercontent.com/imthegoodboy/Resumechecker/main/examples/anna-app-resume-reviewer/bundle/icon.svg",
   "cover_url": "https://raw.githubusercontent.com/imthegoodboy/Resumechecker/main/examples/anna-app-resume-reviewer/docs/listing/cover.svg",

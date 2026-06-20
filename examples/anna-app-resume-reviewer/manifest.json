@@ -9,7 +9,7 @@
   ],
   "required_executas": [],
   "optional_executas": [],
-  "system_prompt_addendum": "The user has the AI Resume Reviewer Anna App open. The app performs inline resume analysis in the browser, including ATS score, missing keywords, prioritized issues, suggested changes, and an editable improved draft. Prefer structured, actionable feedback over generic resume advice.",
+  "system_prompt_addendum": "The user has the AI Resume Reviewer Anna App open. The app can use Anna LLM completion when granted, then falls back to inline browser analysis if host LLM completion is unavailable or slow. It produces ATS score, missing keywords, prioritized issues, suggested changes, and an editable improved draft. Prefer structured, evidence-based feedback over generic resume advice.",
   "user_message_prefix_template": "[AI Resume Reviewer] {user_message}",
   "tags": ["resume", "career", "ats", "job-search", "students"],
   "ui": {
@@ -34,6 +34,7 @@
       }
     ],
     "host_api": {
+      "llm": ["complete"],
       "storage": ["get", "set", "delete", "list"],
       "chat": ["write_message", "append_artifact"],
       "window": ["set_title"]

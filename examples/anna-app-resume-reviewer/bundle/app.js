@@ -7,6 +7,7 @@ const MAX_STORED_VERSIONS = 12;
 const STORAGE_VALUE_SOFT_LIMIT = 220 * 1024;
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 const MAX_INLINE_TEXT_CHARS = 24000;
+const LLM_REVIEW_TIMEOUT_MS = 30000;
 
 const $ = (id) => document.getElementById(id);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -71,8 +72,8 @@ async function init() {
   bindUi();
   renderEmpty();
   try {
-    app.anna = await withTimeout(AnnaAppRuntime.connect(), 5000);
-    setRuntime("Inline review ready", true);
+    app.anna = await withTimeout(AnnaAppRuntime.connect(), 5000, "Anna runtime connection timed out");
+    setRuntime(canUseAnnaLlm() ? "Anna LLM ready" : "Inline review ready", true);
     await app.anna.window?.set_title?.({ title: "AI Resume Reviewer" });
   } catch (error) {
     app.anna = createLocalAnna();
@@ -83,10 +84,10 @@ async function init() {
   renderAll();
 }
 
-function withTimeout(promise, ms) {
+function withTimeout(promise, ms, message) {
   let timer = null;
   const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error("Anna runtime connection timed out")), ms);
+    timer = setTimeout(() => reject(new Error(message || "Operation timed out")), ms);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
@@ -160,6 +161,119 @@ async function runInlineReview(args) {
     analysis: localAnalysis(args),
     used_llm: false,
   };
+}
+
+async function runReview(args) {
+  const llmPayload = await runAnnaLlmReview(args).catch((error) => {
+    console.warn("[resume-reviewer] Anna LLM review unavailable:", error?.message || error);
+    return null;
+  });
+  return llmPayload || runInlineReview(args);
+}
+
+function canUseAnnaLlm() {
+  return typeof app.anna?.llm?.complete === "function";
+}
+
+async function runAnnaLlmReview(args) {
+  if (!canUseAnnaLlm()) return null;
+  const reply = await withTimeout(
+    app.anna.llm.complete({
+      systemPrompt: [
+        "You are a strict resume reviewer for students, freshers, and job seekers.",
+        "Return only valid JSON. Do not include markdown fences.",
+        "Use only evidence in the resume and job description. Do not invent employers, degrees, metrics, links, or tools.",
+        "Keep suggestions concrete, concise, and safe for the candidate to edit before applying.",
+      ].join(" "),
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: buildLlmReviewPrompt(args),
+          },
+        },
+      ],
+      maxTokens: Math.min(Number(args.max_tokens) || 2200, 2600),
+      temperature: 0.2,
+    }),
+    LLM_REVIEW_TIMEOUT_MS,
+    "Anna LLM completion timed out; inline fallback used",
+  );
+  const text = extractCompletionText(reply);
+  const parsed = parseJsonObject(text);
+  if (!parsed) throw new Error("Anna LLM returned a non-JSON review");
+  const analysis = parsed.analysis && typeof parsed.analysis === "object" ? parsed.analysis : parsed;
+  analysis.used_llm = true;
+  analysis.model = analysis.model || reply?.model || "Anna LLM";
+  analysis.source_note = analysis.source_note || args.source_note || "Anna LLM review";
+  return { analysis, used_llm: true, model: analysis.model };
+}
+
+function buildLlmReviewPrompt(args) {
+  const schema = {
+    ats_score: "0-100 integer",
+    summary: "one sentence",
+    missing_keywords: ["keyword"],
+    problems: [{ title: "issue", detail: "evidence-based detail", severity: "high|medium|low" }],
+    perspectives: {
+      recruiter: { verdict: "sentence", findings: ["finding"], priorities: ["priority"] },
+      ats: { verdict: "sentence", findings: ["finding"], priorities: ["priority"] },
+      engineer: { verdict: "sentence", findings: ["finding"], priorities: ["priority"] },
+    },
+    suggestions: [{ id: "s1", section: "section", title: "change", reason: "why", rewrite: "candidate-editable text", impact: "recruiter|ats|engineer" }],
+    improved_resume: "edited resume draft or targeted update notes",
+  };
+  return [
+    "Review this resume for the target role.",
+    `Target role: ${args.target_role || "Not provided"}`,
+    `Perspectives requested: ${(args.perspectives || []).join(", ") || "recruiter, ats, engineer"}`,
+    `Job description or keywords:\n${limitString(args.job_description || "", 6000) || "Not provided"}`,
+    `Resume:\n${limitString(args.resume_text || "", 18000)}`,
+    `Return JSON matching this schema:\n${JSON.stringify(schema)}`,
+  ].join("\n\n");
+}
+
+function extractCompletionText(reply) {
+  const content = reply?.content;
+  if (typeof content === "string") return content;
+  if (typeof content?.text === "string") return content.text;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (typeof part?.text === "string") return part.text;
+        if (typeof part?.content === "string") return part.content;
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (typeof reply?.text === "string") return reply.text;
+  return "";
+}
+
+function parseJsonObject(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return null;
+  for (const candidate of jsonCandidates(raw)) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      /* try the next candidate */
+    }
+  }
+  return null;
+}
+
+function jsonCandidates(raw) {
+  const candidates = [raw];
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) candidates.push(fenced[1].trim());
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start >= 0 && end > start) candidates.push(raw.slice(start, end + 1));
+  return candidates;
 }
 
 function finishReview(payload, fallbackText) {
@@ -306,12 +420,12 @@ async function onReviewSubmit(event) {
   setBusy(true);
   try {
     const args = await buildReviewArgs();
-    const payload = await runInlineReview(args);
+    const payload = await runReview(args);
     finishReview(payload, args.resume_text || resumeText);
     await persistState();
     renderAll();
     selectPage("results");
-    toast("Review complete inline.");
+    toast(app.analysis.used_llm ? "Review complete with Anna LLM." : "Review complete inline.");
   } catch (error) {
     toast(formatError(error), "error");
   } finally {
@@ -321,8 +435,13 @@ async function onReviewSubmit(event) {
 
 async function buildReviewArgs() {
   const perspectives = $$('input[name="perspective"]:checked').map((el) => el.value);
-  const extraction = await getUploadExtraction(app.uploadedFile);
-  const resumeText = els.resumeText.value.trim() || extraction?.text || "";
+  const typedText = els.resumeText.value.trim();
+  let extraction = app.uploadExtraction;
+  if (!typedText && app.uploadedFile) {
+    extraction = await getUploadExtraction(app.uploadedFile);
+  }
+  const resumeText = typedText || extraction?.text || "";
+  const typedFromExtraction = Boolean(typedText && extraction?.text && typedText === extraction.text);
   if (!resumeText) {
     throw new Error("Could not read resume text inline. Paste selectable text and try again.");
   }
@@ -332,7 +451,7 @@ async function buildReviewArgs() {
     job_description: els.jobDescription.value.trim(),
     perspectives: perspectives.length ? perspectives : ["recruiter", "ats", "engineer"],
     max_tokens: 2600,
-    source_note: extraction?.note || "inline text review",
+    source_note: typedFromExtraction || !typedText ? extraction?.note || "inline text review" : "inline text review",
   };
   if (app.uploadedFile) args.filename = app.uploadedFile.name;
   return args;
@@ -457,7 +576,7 @@ function renderAnalysis() {
   els.summary.textContent = analysis.summary;
   const meta = [];
   if (analysis.used_llm) meta.push("Anna LLM");
-  else meta.push("offline fallback");
+  else meta.push("inline fallback");
   if (analysis.model) meta.push(analysis.model);
   if (analysis.source_note) meta.push(analysis.source_note);
   els.meta.textContent = meta.join(" - ");
@@ -911,11 +1030,6 @@ function createLocalAnna() {
       async set({ key, value }) {
         store.set(key, value);
         return { ok: true };
-      },
-    },
-    tools: {
-      async invoke({ args }) {
-        return { success: true, data: { analysis: localAnalysis(args), used_llm: false } };
       },
     },
     chat: {

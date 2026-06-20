@@ -1,8 +1,8 @@
 {
   "name": "anna-app-resume-reviewer",
   "private": true,
-  "version": "0.1.5",
-  "description": "Anna App for AI-assisted resume review with ATS scoring, reviewer perspectives, approved changes, and version history.",
+  "version": "0.1.7",
+  "description": "Anna App for LLM-assisted resume review with inline fallback, ATS scoring, reviewer perspectives, approved changes, and version history.",
   "type": "module",
   "scripts": {
     "dev": "anna-app dev --port 5184 --llm-account https://anna.partners",
