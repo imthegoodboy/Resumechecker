@@ -4,7 +4,7 @@
   "version": "0.1.1",
   "executa_type": "tool",
   "description": "Analyzes resumes for ATS match, recruiter screen quality, and senior-engineer evidence using Anna host sampling with deterministic fallback.",
-  "tool_id": "tool-test-resume-reviewer-12345678",
+  "tool_id": "tool-nikku696969-resume-reviewer-cvkbfasx",
   "type": "python",
   "enabled": true,
   "distribution": {
@@ -16,23 +16,23 @@
       },
       "binary": {
         "type": "binary",
-        "package_name": "tool-test-resume-reviewer-12345678",
-        "executable_name": "tool-test-resume-reviewer-12345678",
+        "package_name": "tool-nikku696969-resume-reviewer-cvkbfasx",
+        "executable_name": "tool-nikku696969-resume-reviewer-cvkbfasx",
         "supports_protocol": true,
         "binary_urls": {
           "darwin-arm64": {
-            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-test-resume-reviewer-12345678-darwin-arm64.tar.gz",
-            "entrypoint": "bin/tool-test-resume-reviewer-12345678",
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-nikku696969-resume-reviewer-cvkbfasx-darwin-arm64.tar.gz",
+            "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
           },
           "darwin-x86_64": {
-            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-test-resume-reviewer-12345678-darwin-x86_64.tar.gz",
-            "entrypoint": "bin/tool-test-resume-reviewer-12345678",
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-nikku696969-resume-reviewer-cvkbfasx-darwin-x86_64.tar.gz",
+            "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
           },
           "linux-x86_64": {
-            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-test-resume-reviewer-12345678-linux-x86_64.tar.gz",
-            "entrypoint": "bin/tool-test-resume-reviewer-12345678",
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-nikku696969-resume-reviewer-cvkbfasx-linux-x86_64.tar.gz",
+            "entrypoint": "bin/tool-nikku696969-resume-reviewer-cvkbfasx",
             "format": "tar.gz"
           }
         }

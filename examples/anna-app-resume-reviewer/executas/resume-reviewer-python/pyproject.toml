@@ -1,5 +1,5 @@
 [project]
-name = "tool-test-resume-reviewer-12345678"
+name = "tool-nikku696969-resume-reviewer-cvkbfasx"
 version = "0.1.1"
 description = "Resume Reviewer Executa for Anna Apps: extracts resumes and produces structured review feedback via Anna host sampling with deterministic fallback."
 requires-python = ">=3.10"
@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-"tool-test-resume-reviewer-12345678" = "resume_reviewer_plugin:main"
+"tool-nikku696969-resume-reviewer-cvkbfasx" = "resume_reviewer_plugin:main"
 
 [tool.uv.sources]
 executa-sdk = { path = "../../../../sdk/python", editable = true }

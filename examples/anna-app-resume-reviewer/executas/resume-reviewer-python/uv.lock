@@ -274,7 +274,7 @@ wheels = [
 ]
 
 [[package]]
-name = "tool-test-resume-reviewer-12345678"
+name = "tool-nikku696969-resume-reviewer-cvkbfasx"
 version = "0.1.1"
 source = { editable = "." }
 dependencies = [
