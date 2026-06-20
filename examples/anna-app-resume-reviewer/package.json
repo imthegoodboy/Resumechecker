@@ -1,7 +1,7 @@
 {
   "name": "anna-app-resume-reviewer",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Anna App for AI-assisted resume review with ATS scoring, reviewer perspectives, approved changes, and version history.",
   "type": "module",
   "scripts": {
@@ -9,7 +9,8 @@
     "dev:off": "anna-app dev --port 5184 --no-llm",
     "validate": "anna-app validate --strict",
     "fixture:verify": "anna-app fixture verify fixtures/happy-path.jsonl",
-    "test": "vitest run && python -m py_compile executas/resume-reviewer-python/resume_reviewer_plugin.py"
+    "test:e2e": "node tests/e2e/resume-reviewer.e2e.mjs",
+    "test": "vitest run && python -m py_compile executas/resume-reviewer-python/resume_reviewer_plugin.py && cd executas/resume-reviewer-python && uv run python -m unittest discover ../../tests/plugin"
   },
   "devDependencies": {
     "@anna-ai/cli": "^0.1.22",

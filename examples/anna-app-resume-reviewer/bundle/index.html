@@ -14,62 +14,86 @@
           <span class="brand__mark" aria-hidden="true">RR</span>
           <span class="brand__text">AI Resume Reviewer</span>
         </div>
+
+        <nav class="primary-nav" aria-label="Feature pages">
+          <button class="page-tab is-active" type="button" data-page="review" aria-current="page">Review</button>
+          <button class="page-tab" type="button" data-page="results">Results</button>
+          <button class="page-tab" type="button" data-page="versions">Versions</button>
+          <button class="page-tab" type="button" data-page="feedback">Feedback</button>
+        </nav>
+
         <div class="topbar__status">
           <span class="status-dot" id="conn-dot" aria-hidden="true"></span>
           <span id="runtime-status">Connecting to Anna</span>
         </div>
       </header>
 
-      <section class="workspace" aria-label="Resume review workspace">
-        <aside class="rail rail--intake" aria-label="Resume intake">
-          <div class="rail__head">
+      <section class="page-stage">
+        <section class="app-page app-page--review" id="page-review" data-page="review" aria-label="Resume review intake">
+          <div class="page-intro">
+            <p class="section-label">Resume intake</p>
             <h1>Review before applying</h1>
-            <p>Upload a resume, name the target role, and approve only the changes you want to keep.</p>
+            <p>Upload a resume, add the target role, and keep only the edits that improve the application.</p>
           </div>
 
           <form class="intake-form" id="review-form">
-            <div class="field">
-              <label for="resume-file">Upload resume</label>
-              <label class="file-drop" for="resume-file" id="file-drop">
-                <input id="resume-file" type="file" accept=".txt,.md,.pdf,.docx,.json,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
-                <span class="file-drop__main" id="file-label">Choose PDF, DOCX, TXT, or MD</span>
-                <span class="file-drop__meta" id="file-meta">2 MB max for local preview</span>
-              </label>
-            </div>
+            <section class="form-zone form-zone--resume" aria-label="Resume content">
+              <div class="zone-title">
+                <span>01</span>
+                <h2>Resume</h2>
+              </div>
 
-            <div class="field">
-              <label for="resume-text">Resume text</label>
-              <textarea id="resume-text" rows="9" placeholder="Paste resume text when the upload is scanned poorly."></textarea>
-              <p class="field__help" id="resume-help">Uploaded files are read locally and sent to the bundled Anna tool.</p>
-            </div>
+              <div class="field">
+                <label for="resume-file">Upload resume</label>
+                <label class="file-drop" for="resume-file" id="file-drop">
+                  <input id="resume-file" type="file" accept=".txt,.md,.pdf,.docx,.json,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                  <span class="file-drop__main" id="file-label">Choose PDF, DOCX, TXT, or MD</span>
+                  <span class="file-drop__meta" id="file-meta">2 MB max for local preview</span>
+                </label>
+              </div>
 
-            <div class="field">
-              <label for="target-role">Target role</label>
-              <input id="target-role" type="text" placeholder="Frontend engineer intern" autocomplete="off" />
-            </div>
+              <div class="field">
+                <label for="resume-text">Resume text</label>
+                <textarea id="resume-text" rows="12" placeholder="Paste resume text when the upload is scanned poorly."></textarea>
+                <p class="field__help" id="resume-help">Uploaded files are read locally and sent to the bundled Anna tool.</p>
+              </div>
+            </section>
 
-            <div class="field">
-              <label for="job-description">Job description or keywords</label>
-              <textarea id="job-description" rows="5" placeholder="Paste the role description or the skills the posting names."></textarea>
-            </div>
+            <section class="form-zone form-zone--target" aria-label="Target role">
+              <div class="zone-title">
+                <span>02</span>
+                <h2>Target</h2>
+              </div>
 
-            <fieldset class="perspective-picker">
-              <legend>Review perspectives</legend>
-              <label><input type="checkbox" name="perspective" value="recruiter" checked /> Recruiter</label>
-              <label><input type="checkbox" name="perspective" value="ats" checked /> ATS system</label>
-              <label><input type="checkbox" name="perspective" value="engineer" checked /> Senior engineer</label>
-            </fieldset>
+              <div class="field">
+                <label for="target-role">Target role</label>
+                <input id="target-role" type="text" placeholder="Frontend engineer intern" autocomplete="off" />
+              </div>
 
-            <button class="btn btn--primary" id="review-btn" type="submit">
-              <span class="btn__label">Review resume</span>
-              <span class="spinner" aria-hidden="true"></span>
-            </button>
+              <div class="field">
+                <label for="job-description">Job description or keywords</label>
+                <textarea id="job-description" rows="8" placeholder="Paste the role description or the skills the posting names."></textarea>
+              </div>
+
+              <fieldset class="perspective-picker">
+                <legend>Review perspectives</legend>
+                <label><input type="checkbox" name="perspective" value="recruiter" checked /> Recruiter</label>
+                <label><input type="checkbox" name="perspective" value="ats" checked /> ATS system</label>
+                <label><input type="checkbox" name="perspective" value="engineer" checked /> Senior engineer</label>
+              </fieldset>
+
+              <button class="btn btn--primary" id="review-btn" type="submit">
+                <span class="btn__label">Review resume</span>
+                <span class="spinner" aria-hidden="true"></span>
+              </button>
+            </section>
           </form>
-        </aside>
+        </section>
 
-        <section class="review-surface" aria-label="Review results">
+        <section class="app-page" id="page-results" data-page="results" aria-label="Review results" hidden>
           <div class="review-empty" id="empty-state">
-            <div class="review-empty__rule" aria-hidden="true"></div>
+            <div class="empty-line" aria-hidden="true"></div>
+            <p class="section-label">Results</p>
             <h2>Run the first review.</h2>
             <p>The result will separate ATS gaps from human review problems, then produce an editable draft.</p>
           </div>
@@ -80,7 +104,7 @@
                 <span id="score-value">--</span>
               </div>
               <div class="score-strip__copy">
-                <p class="overline">ATS score</p>
+                <p class="section-label">ATS score</p>
                 <h2 id="analysis-summary">Resume analysis</h2>
                 <p id="analysis-meta">No review has run yet.</p>
               </div>
@@ -94,7 +118,7 @@
 
             <section class="perspective-view" id="perspective-view" aria-live="polite"></section>
 
-            <section class="analysis-grid">
+            <section class="analysis-grid" aria-label="ATS and issue analysis">
               <div class="analysis-block">
                 <div class="block-head">
                   <h3>Missing keywords</h3>
@@ -129,27 +153,35 @@
                   <h3>Improved draft</h3>
                   <p>Edit before saving. The original upload is not changed.</p>
                 </div>
-                <button class="btn btn--quiet" id="copy-draft-btn" type="button">Copy draft</button>
+                <div class="button-row">
+                  <button class="btn btn--quiet" id="copy-draft-btn" type="button">Copy draft</button>
+                  <button class="btn btn--primary" id="save-version-btn" type="button" disabled>Save version</button>
+                </div>
               </div>
-              <textarea id="draft-text" rows="12" spellcheck="true"></textarea>
+              <textarea id="draft-text" rows="14" spellcheck="true"></textarea>
             </section>
           </div>
         </section>
 
-        <aside class="rail rail--history" aria-label="Versions and feedback">
-          <section class="side-section">
-            <div class="block-head">
-              <h2>Version history</h2>
-              <span id="version-count">0</span>
+        <section class="app-page app-page--versions" id="page-versions" data-page="versions" aria-label="Version history" hidden>
+          <div class="page-intro page-intro--inline">
+            <div>
+              <p class="section-label">Saved drafts</p>
+              <h1>Version history</h1>
             </div>
-            <div class="version-list" id="version-list" aria-live="polite"></div>
-            <button class="btn btn--primary btn--full" id="save-version-btn" type="button" disabled>Save version</button>
-          </section>
+            <span class="count-pill" id="version-count">0</span>
+          </div>
+          <div class="version-list" id="version-list" aria-live="polite"></div>
+        </section>
 
-          <section class="side-section">
-            <div class="block-head">
-              <h2>Feedback</h2>
-            </div>
+        <section class="app-page app-page--feedback" id="page-feedback" data-page="feedback" aria-label="Feedback" hidden>
+          <div class="page-intro">
+            <p class="section-label">Feedback</p>
+            <h1>Improve the next review</h1>
+            <p>Save a quick signal and notes for future resume review passes.</p>
+          </div>
+
+          <div class="feedback-layout">
             <div class="feedback-row" role="group" aria-label="Rate this review">
               <button class="icon-choice" type="button" data-feedback="useful" aria-label="Mark review useful">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11v9H4v-9h3Zm4-7-1 7h7.2a2 2 0 0 1 2 2.3l-.8 5a2 2 0 0 1-2 1.7H9V10l2-6Z"/></svg>
@@ -158,13 +190,15 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 13V4H4v9h3Zm4 7-1-7h7.2a2 2 0 0 0 2-2.3l-.8-5A2 2 0 0 0 16.4 4H9v10l2 6Z"/></svg>
               </button>
             </div>
+
             <label class="field field--compact" for="feedback-notes">
               <span>Notes for next review</span>
-              <textarea id="feedback-notes" rows="5" placeholder="What felt useful or missing?"></textarea>
+              <textarea id="feedback-notes" rows="8" placeholder="What felt useful or missing?"></textarea>
             </label>
-            <button class="btn btn--quiet btn--full" id="save-feedback-btn" type="button">Save feedback</button>
-          </section>
-        </aside>
+
+            <button class="btn btn--primary" id="save-feedback-btn" type="button">Save feedback</button>
+          </div>
+        </section>
       </section>
 
       <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

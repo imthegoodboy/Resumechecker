@@ -38,7 +38,7 @@ MAX_RESUME_CHARS = 28000
 
 MANIFEST = {
     "display_name": "Resume Reviewer",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Structured resume review for ATS match, recruiter screen, and senior technical evidence.",
     "author": "Anna Developer",
     "host_capabilities": ["llm.sample"],
@@ -179,6 +179,11 @@ async def _analyze_resume(
 ) -> dict[str, Any]:
     extracted_text, source_note = _collect_resume_text(resume_text, file_b64, filename, mime_type)
     if not extracted_text.strip():
+        if "pdf" in source_note:
+            raise ValueError(
+                "No readable text was extracted from this PDF. If it is a scanned or image-only resume, "
+                "paste OCR text or export a selectable-text PDF."
+            )
         raise ValueError("No readable resume text was provided.")
 
     fallback = _deterministic_analysis(
@@ -246,7 +251,7 @@ def _extract_file_text(raw: bytes, filename: str, mime_type: str) -> tuple[str, 
     if lower.endswith(".docx") or "wordprocessingml" in mime_type:
         return _extract_docx(raw), "docx extraction"
     if lower.endswith(".pdf") or mime_type == "application/pdf":
-        return _extract_pdf_basic(raw), "pdf text scan"
+        return _extract_pdf_text(raw)
     try:
         return raw.decode("utf-8"), "utf-8 text"
     except UnicodeDecodeError:
@@ -266,6 +271,30 @@ def _extract_docx(raw: bytes) -> str:
             if parts:
                 break
     return _clean_text(" ".join(parts))
+
+
+def _extract_pdf_text(raw: bytes) -> tuple[str, str]:
+    text = _extract_pdf_with_pdfminer(raw)
+    if text:
+        return text, "pdf text extraction"
+
+    text = _extract_pdf_basic(raw)
+    if text:
+        return text, "pdf basic text scan"
+
+    return "", "pdf had no extractable text"
+
+
+def _extract_pdf_with_pdfminer(raw: bytes) -> str:
+    try:
+        from pdfminer.high_level import extract_text
+    except Exception:
+        return ""
+
+    try:
+        return _clean_text(extract_text(BytesIO(raw)) or "")
+    except Exception:
+        return ""
 
 
 def _extract_pdf_basic(raw: bytes) -> str:

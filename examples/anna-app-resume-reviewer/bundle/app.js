@@ -16,6 +16,8 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
 const els = {
   shell: $("app-shell"),
+  pageTabs: $$(".page-tab"),
+  pages: $$(".app-page"),
   form: $("review-form"),
   file: $("resume-file"),
   fileLabel: $("file-label"),
@@ -57,6 +59,7 @@ const app = {
   uploadedFile: null,
   analysis: null,
   selectedPerspective: "recruiter",
+  currentPage: "review",
   selectedSuggestionIds: new Set(),
   versions: [],
   activeVersionId: null,
@@ -91,6 +94,9 @@ function withTimeout(promise, ms) {
 }
 
 function bindUi() {
+  els.pageTabs.forEach((tab) => {
+    tab.addEventListener("click", () => selectPage(tab.dataset.page));
+  });
   els.file.addEventListener("change", onFileChange);
   els.form.addEventListener("submit", onReviewSubmit);
   els.tabs.forEach((tab) => {
@@ -170,6 +176,7 @@ async function onReviewSubmit(event) {
     els.saveVersionBtn.disabled = !els.draftText.value.trim();
     await persistState();
     renderAll();
+    selectPage("results");
     toast(app.analysis.used_llm ? "Review complete with Anna LLM." : "Review complete with offline fallback.");
   } catch (error) {
     toast(formatError(error), "error");
@@ -276,6 +283,25 @@ function renderAll() {
   else renderAnalysis();
   renderVersions();
   renderFeedback();
+  renderPageTabs();
+}
+
+function selectPage(page) {
+  const next = ["review", "results", "versions", "feedback"].includes(page) ? page : "review";
+  app.currentPage = next;
+  for (const view of els.pages) {
+    view.hidden = view.dataset.page !== next;
+  }
+  renderPageTabs();
+}
+
+function renderPageTabs() {
+  for (const tab of els.pageTabs) {
+    const active = tab.dataset.page === app.currentPage;
+    tab.classList.toggle("is-active", active);
+    if (active) tab.setAttribute("aria-current", "page");
+    else tab.removeAttribute("aria-current");
+  }
 }
 
 function renderInputsFromState() {

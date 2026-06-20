@@ -1,7 +1,7 @@
 {
   "slug": "resume-reviewer",
   "name": "Resume Reviewer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "executa_type": "tool",
   "description": "Analyzes resumes for ATS match, recruiter screen quality, and senior-engineer evidence using Anna host sampling with deterministic fallback.",
   "tool_id": "tool-test-resume-reviewer-12345678",
@@ -13,7 +13,31 @@
       "local": {
         "type": "local",
         "supports_protocol": true
+      },
+      "binary": {
+        "type": "binary",
+        "package_name": "tool-test-resume-reviewer-12345678",
+        "executable_name": "tool-test-resume-reviewer-12345678",
+        "supports_protocol": true,
+        "binary_urls": {
+          "darwin-arm64": {
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-test-resume-reviewer-12345678-darwin-arm64.tar.gz",
+            "entrypoint": "bin/tool-test-resume-reviewer-12345678",
+            "format": "tar.gz"
+          },
+          "darwin-x86_64": {
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-test-resume-reviewer-12345678-darwin-x86_64.tar.gz",
+            "entrypoint": "bin/tool-test-resume-reviewer-12345678",
+            "format": "tar.gz"
+          },
+          "linux-x86_64": {
+            "url": "https://github.com/imthegoodboy/Resumechecker/releases/download/resume-reviewer-v0.1.1/tool-test-resume-reviewer-12345678-linux-x86_64.tar.gz",
+            "entrypoint": "bin/tool-test-resume-reviewer-12345678",
+            "format": "tar.gz"
+          }
+        }
       }
     }
-  }
+  },
+  "_comment": "Keep active=local for development. For production packaging, use the real minted Anna tool_id in tool_id, package_name, executable_name, pyproject.toml project name, and script name before running the binary release workflow. The binary profile points to GitHub Release assets built by .github/workflows/anna-app-publish.yml using the bin/<tool_id> + manifest.json archive layout."
 }

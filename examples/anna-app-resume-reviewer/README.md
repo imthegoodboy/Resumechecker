@@ -5,7 +5,7 @@ An Anna App that reviews resumes from three perspectives: recruiter, ATS system,
 ## Features
 
 - Upload or paste a resume.
-- Parse TXT, MD, JSON, DOCX, and simple PDF exports.
+- Parse TXT, MD, JSON, DOCX, and selectable-text PDF exports.
 - Add a target role or job description.
 - Generate an ATS score, missing keywords, priority problems, and section-level suggestions.
 - Switch between recruiter, ATS, and senior-engineer review perspectives.
@@ -22,6 +22,7 @@ npm install
 npm test
 npm run validate
 npm run fixture:verify
+npm run test:e2e
 anna-app dev --port 5184 --llm-account https://anna.partners
 ```
 
@@ -61,8 +62,10 @@ Resume content is sent only to the bundled Anna Executa and, when granted, to An
 - `npm test`
 - `npm run validate`
 - `npm run fixture:verify`
+- `npm run test:e2e`
 - `npm audit --json`
 - `python -m py_compile executas\resume-reviewer-python\resume_reviewer_plugin.py`
 - `anna-app dev --port 5184 --llm-account https://anna.partners`
 - Check desktop and mobile widths.
 - Confirm upload, review, approve, save version, restore version, and feedback flows.
+- Use OCR or a selectable-text export for scanned/image-only PDFs.
