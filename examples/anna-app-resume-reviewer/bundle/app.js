@@ -1,20 +1,12 @@
 import { AnnaAppRuntime } from "/static/anna-apps/_sdk/latest/index.js";
 
-const EXECUTA_HANDLE = "resume-reviewer";
-const DEV_FALLBACK_TOOL_ID = "tool-test-resume-reviewer-12345678";
-const TOOL_ID =
-  (typeof window !== "undefined" &&
-    window.__ANNA_TOOL_IDS__ &&
-    window.__ANNA_TOOL_IDS__[EXECUTA_HANDLE]) ||
-  DEV_FALLBACK_TOOL_ID;
-const TOOL_METHOD = "analyze_resume";
-const TOOL_INVOKE_TIMEOUT_MS = 150000;
 const STORAGE_KEY = "resume-reviewer:v2";
 const LEGACY_STORAGE_KEY = "resume-reviewer:v1";
 const VERSION_STORAGE_PREFIX = "resume-reviewer:version:";
 const MAX_STORED_VERSIONS = 12;
 const STORAGE_VALUE_SOFT_LIMIT = 220 * 1024;
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+const MAX_INLINE_TEXT_CHARS = 24000;
 
 const $ = (id) => document.getElementById(id);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -62,6 +54,7 @@ const els = {
 const app = {
   anna: null,
   uploadedFile: null,
+  uploadExtraction: null,
   analysis: null,
   selectedPerspective: "recruiter",
   currentPage: "review",
@@ -79,11 +72,11 @@ async function init() {
   renderEmpty();
   try {
     app.anna = await withTimeout(AnnaAppRuntime.connect(), 5000);
-    setRuntime("Connected to Anna", true);
+    setRuntime("Inline review ready", true);
     await app.anna.window?.set_title?.({ title: "AI Resume Reviewer" });
   } catch (error) {
     app.anna = createLocalAnna();
-    setRuntime("Standalone preview", false);
+    setRuntime("Inline preview", false);
     console.warn("[resume-reviewer] Anna runtime unavailable:", error?.message || error);
   }
   await loadState();
@@ -126,9 +119,10 @@ function bindUi() {
 async function onFileChange() {
   const file = els.file.files?.[0] || null;
   app.uploadedFile = null;
+  app.uploadExtraction = null;
   if (!file) {
     els.fileLabel.textContent = "Choose PDF, DOCX, TXT, or MD";
-    els.fileMeta.textContent = "2 MB max for local preview";
+    els.fileMeta.textContent = "2 MB max";
     return;
   }
   if (file.size > MAX_UPLOAD_BYTES) {
@@ -139,19 +133,164 @@ async function onFileChange() {
   app.uploadedFile = file;
   els.fileLabel.textContent = file.name;
   els.fileMeta.textContent = `${formatBytes(file.size)} - ${file.type || "file"}`;
-  if (isLikelyText(file)) {
-    try {
-      const text = await file.text();
-      if (!els.resumeText.value.trim()) {
-        els.resumeText.value = text.slice(0, 24000);
-      }
-      els.resumeHelp.textContent = "Text extracted locally from the selected file.";
-    } catch {
-      els.resumeHelp.textContent = "File selected. The Anna tool will extract what it can.";
+
+  try {
+    const extraction = await extractUploadedFileText(file);
+    app.uploadExtraction = extraction;
+    if (extraction.text && !els.resumeText.value.trim()) {
+      els.resumeText.value = extraction.text.slice(0, MAX_INLINE_TEXT_CHARS);
     }
-  } else {
-    els.resumeHelp.textContent = "File selected. The Anna tool will extract what it can.";
+    els.resumeHelp.textContent = extraction.note
+      ? `File text extracted inline: ${extraction.note}.`
+      : "File text extracted inline.";
+  } catch (error) {
+    if (isDocx(file)) {
+      els.resumeHelp.textContent = "DOCX could not be read in this browser. Paste the resume text to review inline.";
+    } else if (isPdf(file)) {
+      els.resumeHelp.textContent = "This PDF has no selectable text. Paste the resume text or export a selectable PDF.";
+    } else {
+      els.resumeHelp.textContent = "Could not read that file inline. Paste the resume text to continue.";
+    }
+    console.warn("[resume-reviewer] inline extraction failed:", error?.message || error);
   }
+}
+
+async function runInlineReview(args) {
+  return {
+    analysis: localAnalysis(args),
+    used_llm: false,
+  };
+}
+
+function finishReview(payload, fallbackText) {
+  app.analysis = normalizeAnalysis(payload.analysis || payload);
+  app.selectedSuggestionIds = new Set(app.analysis.suggestions.map((s) => s.id));
+  app.selectedPerspective = pickAvailablePerspective(app.selectedPerspective);
+  app.activeVersionId = null;
+  els.draftText.value = app.analysis.improved_resume || fallbackText;
+  els.saveVersionBtn.disabled = !els.draftText.value.trim();
+}
+
+async function getUploadExtraction(file) {
+  if (!file) return null;
+  if (app.uploadExtraction?.fileName === file.name && app.uploadExtraction?.fileSize === file.size) {
+    return app.uploadExtraction;
+  }
+  app.uploadExtraction = await extractUploadedFileText(file);
+  return app.uploadExtraction;
+}
+
+async function extractUploadedFileText(file) {
+  let text = "";
+  let note = "";
+  if (isLikelyText(file)) {
+    text = await file.text();
+    note = "local text extraction";
+  } else if (isPdf(file)) {
+    text = await extractPdfText(await file.arrayBuffer());
+    note = "pdf text extraction";
+  } else if (isDocx(file)) {
+    text = await extractDocxText(await file.arrayBuffer());
+    note = "docx text extraction";
+  } else {
+    throw new Error("Unsupported inline file type");
+  }
+
+  text = normalizeWhitespace(text).slice(0, MAX_INLINE_TEXT_CHARS);
+  if (!text) throw new Error("No readable text found");
+  return {
+    fileName: file.name,
+    fileSize: file.size,
+    text,
+    note,
+  };
+}
+
+async function extractPdfText(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const parts = [];
+  const rawText = decodeBytes(bytes);
+  parts.push(rawText);
+
+  const streamBytes = findPdfStreams(bytes);
+  for (const item of streamBytes) {
+    try {
+      const content = item.flate ? await inflateBytes(item.bytes, "deflate") : item.bytes;
+      parts.push(decodeBytes(content));
+    } catch (error) {
+      console.warn("[resume-reviewer] PDF stream skipped:", error?.message || error);
+    }
+  }
+
+  return normalizeWhitespace(
+    parts
+      .flatMap((part) => extractPdfLiteralStrings(part))
+      .join(" "),
+  );
+}
+
+function findPdfStreams(bytes) {
+  const streams = [];
+  const streamMarker = asciiBytes("stream");
+  const endMarker = asciiBytes("endstream");
+  let pos = 0;
+  while (pos < bytes.length) {
+    const startMarker = indexOfBytes(bytes, streamMarker, pos);
+    if (startMarker < 0) break;
+    let start = startMarker + streamMarker.length;
+    if (bytes[start] === 13 && bytes[start + 1] === 10) start += 2;
+    else if (bytes[start] === 10 || bytes[start] === 13) start += 1;
+
+    const end = indexOfBytes(bytes, endMarker, start);
+    if (end < 0) break;
+    let streamEnd = end;
+    while (streamEnd > start && (bytes[streamEnd - 1] === 10 || bytes[streamEnd - 1] === 13)) streamEnd -= 1;
+
+    const dictStart = Math.max(0, startMarker - 800);
+    const dictText = decodeBytes(bytes.slice(dictStart, startMarker));
+    streams.push({
+      bytes: bytes.slice(start, streamEnd),
+      flate: /\/FlateDecode\b/.test(dictText),
+    });
+    pos = end + endMarker.length;
+  }
+  return streams;
+}
+
+async function extractDocxText(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const entries = await readZipEntries(bytes);
+  const documentXml = entries.get("word/document.xml");
+  if (!documentXml) throw new Error("word/document.xml not found");
+  return xmlText(documentXml);
+}
+
+async function readZipEntries(bytes) {
+  const entries = new Map();
+  let pos = 0;
+  while (pos + 30 < bytes.length) {
+    if (readU32(bytes, pos) !== 0x04034b50) {
+      pos += 1;
+      continue;
+    }
+    const method = readU16(bytes, pos + 8);
+    const compressedSize = readU32(bytes, pos + 18);
+    const nameLength = readU16(bytes, pos + 26);
+    const extraLength = readU16(bytes, pos + 28);
+    const nameStart = pos + 30;
+    const dataStart = nameStart + nameLength + extraLength;
+    const dataEnd = dataStart + compressedSize;
+    if (dataEnd > bytes.length) break;
+
+    const name = decodeBytes(bytes.slice(nameStart, nameStart + nameLength));
+    const compressed = bytes.slice(dataStart, dataEnd);
+    let content = null;
+    if (method === 0) content = compressed;
+    else if (method === 8) content = await inflateBytes(compressed, "deflate-raw");
+    if (content) entries.set(name, decodeBytes(content));
+    pos = dataEnd;
+  }
+  return entries;
 }
 
 async function onReviewSubmit(event) {
@@ -167,23 +306,12 @@ async function onReviewSubmit(event) {
   setBusy(true);
   try {
     const args = await buildReviewArgs();
-    const reply = await app.anna.tools.invoke({
-      tool_id: TOOL_ID,
-      method: TOOL_METHOD,
-      args,
-      timeoutMs: TOOL_INVOKE_TIMEOUT_MS,
-    });
-    const payload = unwrapToolReply(reply);
-    app.analysis = normalizeAnalysis(payload.analysis || payload);
-    app.selectedSuggestionIds = new Set(app.analysis.suggestions.map((s) => s.id));
-    app.selectedPerspective = pickAvailablePerspective(app.selectedPerspective);
-    app.activeVersionId = null;
-    els.draftText.value = app.analysis.improved_resume || resumeText;
-    els.saveVersionBtn.disabled = !els.draftText.value.trim();
+    const payload = await runInlineReview(args);
+    finishReview(payload, args.resume_text || resumeText);
     await persistState();
     renderAll();
     selectPage("results");
-    toast(app.analysis.used_llm ? "Review complete with Anna LLM." : "Review complete with offline fallback.");
+    toast("Review complete inline.");
   } catch (error) {
     toast(formatError(error), "error");
   } finally {
@@ -193,26 +321,21 @@ async function onReviewSubmit(event) {
 
 async function buildReviewArgs() {
   const perspectives = $$('input[name="perspective"]:checked').map((el) => el.value);
+  const extraction = await getUploadExtraction(app.uploadedFile);
+  const resumeText = els.resumeText.value.trim() || extraction?.text || "";
+  if (!resumeText) {
+    throw new Error("Could not read resume text inline. Paste selectable text and try again.");
+  }
   const args = {
-    resume_text: els.resumeText.value.trim(),
+    resume_text: resumeText,
     target_role: els.targetRole.value.trim(),
     job_description: els.jobDescription.value.trim(),
     perspectives: perspectives.length ? perspectives : ["recruiter", "ats", "engineer"],
     max_tokens: 2600,
+    source_note: extraction?.note || "inline text review",
   };
-  if (app.uploadedFile) {
-    const data = await readFileAsBase64(app.uploadedFile);
-    args.file_b64 = data.base64;
-    args.filename = app.uploadedFile.name;
-    args.mime_type = app.uploadedFile.type || guessMime(app.uploadedFile.name);
-  }
+  if (app.uploadedFile) args.filename = app.uploadedFile.name;
   return args;
-}
-
-function unwrapToolReply(reply) {
-  if (reply && typeof reply === "object" && reply.success && reply.data) return reply.data;
-  if (reply && typeof reply === "object" && reply.data && reply.tool) return reply.data;
-  return reply || {};
 }
 
 function normalizeAnalysis(input) {
@@ -819,7 +942,7 @@ function localAnalysis(args) {
     ats_score: score,
     used_llm: false,
     summary: `${role || "This role"} match is ${score >= 75 ? "close" : "not ready"} after keyword and evidence checks.`,
-    source_note: "standalone preview",
+    source_note: args?.source_note || "inline browser analysis",
     missing_keywords: missing,
     problems: [
       !hasMetrics && {
@@ -895,34 +1018,88 @@ function extractTerms(text) {
   return Array.from(new Set([...base, ...common])).slice(0, 24);
 }
 
-function readFileAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error || new Error("File read failed"));
-    reader.onload = () => {
-      const bytes = new Uint8Array(reader.result);
-      let binary = "";
-      const chunk = 0x8000;
-      for (let i = 0; i < bytes.length; i += chunk) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-      }
-      resolve({ base64: btoa(binary) });
-    };
-    reader.readAsArrayBuffer(file);
-  });
-}
-
 function isLikelyText(file) {
   return /text|markdown|json/.test(file.type) || /\.(txt|md|json)$/i.test(file.name);
 }
 
-function guessMime(name) {
-  const ext = (name.split(".").pop() || "").toLowerCase();
-  if (ext === "pdf") return "application/pdf";
-  if (ext === "docx") return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-  if (ext === "md") return "text/markdown";
-  if (ext === "json") return "application/json";
-  return "text/plain";
+function isPdf(file) {
+  return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+}
+
+function isDocx(file) {
+  return file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || /\.docx$/i.test(file.name);
+}
+
+async function inflateBytes(bytes, format) {
+  if (typeof DecompressionStream !== "function") {
+    throw new Error("Browser decompression is unavailable");
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream(format));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+function extractPdfLiteralStrings(content) {
+  const values = [];
+  const re = /\((?:\\.|[^\\)])*\)/g;
+  for (const match of content.matchAll(re)) {
+    const text = decodePdfString(match[0].slice(1, -1));
+    if (/[a-z0-9]/i.test(text)) values.push(text);
+  }
+  return values;
+}
+
+function decodePdfString(value) {
+  return value
+    .replace(/\\([nrtbf()\\])/g, (_, ch) => {
+      const map = { n: "\n", r: "\r", t: "\t", b: "\b", f: "\f", "(": "(", ")": ")", "\\": "\\" };
+      return map[ch] || ch;
+    })
+    .replace(/\\([0-7]{1,3})/g, (_, octal) => String.fromCharCode(Number.parseInt(octal, 8)));
+}
+
+function xmlText(xml) {
+  return normalizeWhitespace(
+    xml
+      .replace(/<w:tab\s*\/>/g, " ")
+      .replace(/<\/w:p>/g, "\n")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'"),
+  );
+}
+
+function normalizeWhitespace(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function asciiBytes(value) {
+  return Uint8Array.from(value, (ch) => ch.charCodeAt(0));
+}
+
+function indexOfBytes(bytes, needle, from) {
+  outer:
+  for (let i = from; i <= bytes.length - needle.length; i += 1) {
+    for (let j = 0; j < needle.length; j += 1) {
+      if (bytes[i + j] !== needle[j]) continue outer;
+    }
+    return i;
+  }
+  return -1;
+}
+
+function decodeBytes(bytes) {
+  return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+}
+
+function readU16(bytes, offset) {
+  return bytes[offset] | (bytes[offset + 1] << 8);
+}
+
+function readU32(bytes, offset) {
+  return (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 0;
 }
 
 function setBusy(on) {

@@ -1,22 +1,15 @@
 {
   "schema": 2,
   "permissions": [
-    "tools.invoke",
     "storage.read",
     "storage.write",
     "chat.write_message",
     "chat.append_artifact",
     "ui.svg"
   ],
-  "required_executas": [
-    {
-      "tool_id": "bundled:resume-reviewer",
-      "min_version": "0.1.0",
-      "version": "latest"
-    }
-  ],
+  "required_executas": [],
   "optional_executas": [],
-  "system_prompt_addendum": "The user has the AI Resume Reviewer Anna App open. Use the bundled resume-reviewer tool as the source of truth for resume analysis. It reviews uploaded or pasted resume content from recruiter, ATS, and senior-engineer perspectives, produces an ATS score, missing keywords, prioritized issues, suggested changes, and a safer improved draft. Prefer structured, actionable feedback over generic resume advice.",
+  "system_prompt_addendum": "The user has the AI Resume Reviewer Anna App open. The app performs inline resume analysis in the browser, including ATS score, missing keywords, prioritized issues, suggested changes, and an editable improved draft. Prefer structured, actionable feedback over generic resume advice.",
   "user_message_prefix_template": "[AI Resume Reviewer] {user_message}",
   "tags": ["resume", "career", "ats", "job-search", "students"],
   "ui": {
@@ -41,7 +34,6 @@
       }
     ],
     "host_api": {
-      "tools": ["required:bundled:resume-reviewer"],
       "storage": ["get", "set", "delete", "list"],
       "chat": ["write_message", "append_artifact"],
       "window": ["set_title"]

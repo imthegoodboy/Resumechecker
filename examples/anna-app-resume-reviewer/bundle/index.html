@@ -48,14 +48,14 @@
                 <label class="file-drop" for="resume-file" id="file-drop">
                   <input id="resume-file" type="file" accept=".txt,.md,.pdf,.docx,.json,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                   <span class="file-drop__main" id="file-label">Choose PDF, DOCX, TXT, or MD</span>
-                  <span class="file-drop__meta" id="file-meta">2 MB max for local preview</span>
+                  <span class="file-drop__meta" id="file-meta">2 MB max</span>
                 </label>
               </div>
 
               <div class="field">
                 <label for="resume-text">Resume text</label>
                 <textarea id="resume-text" rows="12" placeholder="Paste resume text when the upload is scanned poorly."></textarea>
-                <p class="field__help" id="resume-help">Uploaded files are read locally and sent to the bundled Anna tool.</p>
+                <p class="field__help" id="resume-help">Uploaded files are read inline in this app. No local Agent is required.</p>
               </div>
             </section>
 
@@ -204,7 +204,6 @@
       <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     </main>
 
-    <script src="anna-tool-ids.js" defer></script>
     <script src="app.js" type="module"></script>
   </body>
 </html>

@@ -1,9 +1,9 @@
 {
   "slug": "resume-reviewer",
   "name": "AI Resume Reviewer",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "tagline": "Review resumes as a recruiter, ATS system, and senior engineer before applying.",
-  "description": "AI Resume Reviewer is an Anna App for students, freshers, and job seekers who need concrete resume feedback before applying. Upload or paste a resume, add a target role or job description, then review the output through recruiter, ATS, and senior-engineer perspectives.\n\nWhat's inside:\n\n- Resume upload and paste intake for text, markdown, PDF, and DOCX files.\n- ATS score, missing keywords, priority problems, and section-level suggestions.\n- Reviewer perspectives for recruiter screening, ATS matching, and senior technical review.\n- Approval workflow that saves accepted changes as versions.\n- Persistent version history and feedback notes through Anna storage.\n\nThe app uses Anna's host LLM through a bundled Executa when sampling is granted. It also includes deterministic fallback analysis for offline development and no-LLM previews.",
+  "description": "AI Resume Reviewer is an Anna App for students, freshers, and job seekers who need concrete resume feedback before applying. Upload or paste a resume, add a target role or job description, then review the output through recruiter, ATS, and senior-engineer perspectives.\n\nWhat's inside:\n\n- Inline resume intake for text, markdown, selectable-text PDF, JSON, and supported DOCX files.\n- ATS score, missing keywords, priority problems, and section-level suggestions.\n- Reviewer perspectives for recruiter screening, ATS matching, and senior technical review.\n- Approval workflow that saves accepted changes as versions.\n- Persistent version history and feedback notes through Anna storage.\n\nThe app now runs its core review flow inline in the browser, so users can review resumes even when no local Anna Executa Agent is online.",
   "category": "productivity",
   "logo_url": "https://raw.githubusercontent.com/imthegoodboy/Resumechecker/main/examples/anna-app-resume-reviewer/bundle/icon.svg",
   "cover_url": "https://raw.githubusercontent.com/imthegoodboy/Resumechecker/main/examples/anna-app-resume-reviewer/docs/listing/cover.svg",
@@ -13,8 +13,5 @@
   "homepage_url": "https://github.com/imthegoodboy/Resumechecker/tree/main/examples/anna-app-resume-reviewer",
   "support_url": "https://github.com/imthegoodboy/Resumechecker/issues",
   "privacy_url": "https://github.com/imthegoodboy/Resumechecker/tree/main/examples/anna-app-resume-reviewer#privacy",
-  "pricing_model": "free",
-  "bundled_executas": {
-    "resume-reviewer": { "path": "./executas/resume-reviewer-python" }
-  }
+  "pricing_model": "free"
 }

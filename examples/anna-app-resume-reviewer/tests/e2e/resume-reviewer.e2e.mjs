@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
@@ -15,7 +15,7 @@ let sidecarSnapshot;
 
 async function main() {
   sidecarPath = join(process.cwd(), "bundle", "anna-tool-ids.js");
-  sidecarSnapshot = readFileSync(sidecarPath, "utf8");
+  sidecarSnapshot = existsSync(sidecarPath) ? readFileSync(sidecarPath, "utf8") : null;
   server = startDevHarness();
   await waitForServer(BASE_URL, 40_000);
 
@@ -239,7 +239,8 @@ try {
     await browser.close();
   }
   stopDevHarness(server);
-  if (sidecarPath && sidecarSnapshot != null) {
-    writeFileSync(sidecarPath, sidecarSnapshot);
+  if (sidecarPath) {
+    if (sidecarSnapshot != null) writeFileSync(sidecarPath, sidecarSnapshot);
+    else if (existsSync(sidecarPath)) rmSync(sidecarPath);
   }
 }
