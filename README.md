@@ -1,243 +1,95 @@
-> 中文版本请参阅 [README.zh-CN.md](README.zh-CN.md)
+# AI Resume Reviewer
 
-# Anna Executa Plugin Examples
+AI Resume Reviewer is a production-ready Anna App for students, freshers, and job seekers who want concrete resume feedback before applying. It reviews a resume against a target role from three angles: recruiter screening, ATS keyword matching, and senior-engineer evidence quality.
 
-This repository provides **complete examples and development documentation** for Anna Executa plugins and Anna Apps, covering Python, Node.js, and Go, with both Local and Binary distribution methods.
+The app is designed to be judge-safe: it uses Anna runtime services when available, but the core review flow still works without a local Anna Agent or bundled Executa install.
 
-## Featured App: AI Resume Reviewer
+Demo video link : https://youtu.be/g87CTlOptKQ
 
-[`examples/anna-app-resume-reviewer`](examples/anna-app-resume-reviewer/) is the production-focused app in this repo. It helps students, freshers, and job seekers review a resume before applying.
+## What It Does
 
-What it does:
+- Upload or paste a resume.
+- Read TXT, MD, JSON, selectable-text PDF exports, and supported DOCX files inline.
+- Add a target role plus job-description keywords.
+- Use `anna.llm.complete` for richer review when the Anna host grant is available.
+- Fall back to deterministic inline analysis when LLM, Agent, or network services are unavailable.
+- Produce an ATS score, missing keywords, priority issues, reviewer perspectives, and suggested rewrites.
+- Let users approve changes, edit the improved draft, and save version history.
+- Persist versions and feedback through Anna app storage.
+- Attach saved-version handoff notes to Anna chat when the chat grant is available.
 
-- Reads pasted resumes plus TXT, MD, JSON, selectable-text PDF, and supported DOCX uploads.
-- Reviews the resume as a recruiter, ATS system, and senior engineer.
-- Uses Anna-hosted `llm.complete` when the grant is available.
-- Falls back to deterministic inline analysis when LLM or local Agent services are unavailable.
-- Saves improved drafts, approved suggestions, feedback, and version history through Anna app storage.
-- Runs without requiring users to install Python, `uv`, source code, or a local Executa Agent.
+## Production Architecture
 
-Quick check:
+The production manifest does not require `tools.invoke` or any bundled Executa:
 
-```bash
-cd examples/anna-app-resume-reviewer
+```json
+{
+  "required_executas": [],
+  "ui": {
+    "host_api": {
+      "llm": ["complete"],
+      "storage": ["get", "set", "delete", "list"],
+      "chat": ["write_message", "append_artifact"],
+      "window": ["set_title"]
+    }
+  }
+}
+```
+
+Review flow:
+
+```text
+resume upload / paste
+  -> inline text extraction
+  -> optional Anna LLM structured review
+  -> deterministic inline fallback if LLM is unavailable
+  -> editable draft + versions in Anna storage
+```
+
+The legacy `executas/resume-reviewer-python` tool remains in the repo as a tested Executa implementation and binary-distribution reference, but the live app no longer depends on a local Agent being online.
+
+## UI Flow
+
+1. **Review**: upload or paste the resume, add target role details, and choose review perspectives.
+2. **Results**: inspect ATS score, missing keywords, problems, perspective tabs, and suggested rewrites.
+3. **Versions**: save approved drafts and restore prior versions.
+4. **Feedback**: store a quick quality signal and notes for the next pass.
+
+## Run Locally
+
+```powershell
+cd examples\anna-app-resume-reviewer
 npm install
-npm run validate
 npm test
+npm run validate
 npm run fixture:verify
 npm run test:e2e
+anna-app dev --port 5184 --llm-account https://anna.partners
 ```
 
-## What is Executa?
+Offline preview:
 
-Executa is the plugin extension system for Anna Agent. Developers can write tools in **any programming language** — as long as they implement the standard **JSON-RPC 2.0 over stdio** protocol, Anna will automatically discover, load, and expose them to the LLM.
-
-## Directory Structure
-
-```
-anna-executa-examples/
-├── examples/
-│   ├── python/                          # Python plugin examples (each in its own subdir)
-│   │   ├── basic-tool/                  # Basic plugin (text processing)
-│   │   ├── credential-tool/             # Credential plugin (Weather API Key)
-│   │   ├── google-oauth-tool/           # Google OAuth plugin (Gmail)
-│   │   ├── sampling-summarizer/         # Sampling plugin v2 (reverse sampling/createMessage)
-│   │   ├── storage-notebook/            # Persistent Storage plugin v2 (reverse storage/* + files/*)
-│   │   └── build_binary.sh              # Builds all examples (or one) via PyInstaller
-│   ├── nodejs/                          # Node.js plugin examples
-│   │   ├── example_plugin.js            # Basic plugin (JSON/Base64/Hash)
-│   │   ├── credential_plugin.js         # Credential plugin (GitHub API Key)
-│   │   ├── google_oauth_plugin.js       # Google OAuth plugin (Calendar)
-│   │   ├── sampling-tool.js             # Sampling plugin v2
-│   │   └── build_binary.sh
-│   ├── go/                              # Go plugin examples
-│   │   ├── main.go                      # Basic plugin (system info / hash)
-│   │   ├── credential_plugin.go         # Credential plugin (Notion API Key)
-│   │   ├── google_oauth_plugin.go       # Google OAuth plugin (Drive)
-│   │   ├── sampling-tool/               # Sampling plugin v2 (separate go.mod)
-│   │   ├── build.sh
-│   │   └── Makefile
-│   ├── multifile-binary/                # Multi-file Binary distribution examples
-│   │   └── python-pyinstaller-onedir/   # PyInstaller --onedir + manifest.json
-│   ├── anna-app-resume-reviewer/        # ⭐ Production Anna App — resume review, optional Anna LLM, inline fallback
-│   ├── anna-app-focus-flow/             # ⭐ Complete Anna App — UI bundle + skill + tool plugin
-│                                        #     The tool plugin ships in three flavours:
-│                                        #     focus-session-{python,node,go}; pick one via
-│                                        #     `executa.json` or `--executa` CLI flag.
-│   └── anna-app-visual-brand/           # ⭐ Anna App — host LLM image generate/edit + APS persistence
-├── sdk/                                 # Reference SDKs used by the sampling examples
-│   ├── python/                          # executa_sdk
-│   ├── nodejs/                          # @anna/executa-sdk
-│   └── go/                              # github.com/anna/executa-sdk
-└── .github/
-    └── workflows/
-        ├── build-release.yml            # Multi-platform CI/CD example
-        └── anna-app.yml                 # Anna App packaging workflow
+```powershell
+anna-app dev --port 5184 --no-llm
 ```
 
-## Quick Start
+## Privacy
 
-### Run any plugin locally — `anna-app executa dev`
+Resume text is processed inside the Anna app iframe for extraction and fallback review. When Anna LLM is available, the app sends the pasted or extracted resume text and target-role context to Anna's hosted LLM interface. The app does not ask for OpenAI keys, provider keys, or third-party credentials. Saved drafts and feedback use Anna app storage scoped to the current app/user.
 
-The [`anna-app-cli`](https://www.npmjs.com/package/@anna-ai/app-cli) ships a
-standalone runner that boots one Executa plugin in isolation — the
-same way `anna-app dev` boots a full Anna App. No matrix-nexus, no
-dashboard, no UI bundle required.
+## Limitations
 
-```bash
-cd examples/python/basic-tool
-anna-app executa dev                        # interactive REPL
-anna-app executa dev --describe             # one-shot: print MANIFEST
-anna-app executa dev --invoke greet --args '{"name":"Ada"}'
-```
+- Scanned or image-only PDFs do not contain selectable text. Use OCR first or paste the resume text.
+- DOCX support covers standard zipped Word documents with `word/document.xml`; unusual encrypted or corrupted files should be pasted as text.
+- LLM output is advisory. Users should review every suggested rewrite before applying.
 
-It auto-detects the launcher from `executa.json` / `pyproject.toml` /
-`package.json` / `go.mod` / `bin/`, performs the full `initialize`
-handshake, and can either mock or relay reverse `sampling/createMessage`
-calls. See the [`anna-app` CLI reference](https://anna.partners/developers/reference/cli) for
-the full reference.
+## Production Checklist
 
-### Python Plugin
-
-Each Python example is a self-contained subdirectory with its own `pyproject.toml` and PyInstaller spec.
-
-```bash
-cd examples/python/basic-tool
-
-# Run directly
-python example_plugin.py
-
-# Test the protocol
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | python example_plugin.py 2>/dev/null
-
-# Install via uv
-uv tool install . && example-text-tool
-
-# Build as a standalone binary (from examples/python/, builds all subdirs or one)
-cd .. && ./build_binary.sh --test
-```
-
-### Node.js Plugin
-
-```bash
-cd examples/nodejs
-
-# Run directly
-node example_plugin.js
-
-# Test the protocol
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | node example_plugin.js 2>/dev/null
-
-# Build as a standalone binary (requires Node.js 18+)
-./build_binary.sh --test
-```
-
-### Go Plugin
-
-```bash
-cd examples/go
-
-# Run directly (each plugin has its own func main — pass the file explicitly)
-go run main.go
-
-# Test the protocol
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | go run main.go 2>/dev/null
-
-# Build a native binary
-go build -o dist/example-go-tool main.go
-
-# Build binaries for all platforms / all plugins
-make all
-```
-
-### Credential Plugins — API Key Pattern
-
-Each language includes a credential plugin example demonstrating how to declare and use platform-managed credentials:
-
-```bash
-# Python — Weather query (requires WEATHER_API_KEY)
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | \
-  python examples/python/credential-tool/credential_plugin.py 2>/dev/null
-
-# Provide credentials via environment variables for local development
-WEATHER_API_KEY=your_key python examples/python/credential-tool/credential_plugin.py
-
-# Node.js — GitHub query (requires GITHUB_TOKEN)
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | node examples/nodejs/credential_plugin.js 2>/dev/null
-
-# Go — Notion query (requires NOTION_TOKEN)
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | go run examples/go/credential_plugin.go 2>/dev/null
-```
-
-### Google OAuth Plugins — OAuth2 Token Pattern
-
-Each language also includes a Google OAuth plugin example showing how to consume OAuth access tokens injected by the platform. From the plugin's perspective, the API is identical to API Key — the platform handles all OAuth complexity (authorization, token exchange, auto-refresh):
-
-```bash
-# Python — Gmail read (requires GMAIL_ACCESS_TOKEN via Google OAuth)
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | \
-  python examples/python/google-oauth-tool/google_oauth_plugin.py 2>/dev/null
-
-# Node.js — Google Calendar (requires GOOGLE_ACCESS_TOKEN via Google OAuth)
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | node examples/nodejs/google_oauth_plugin.js 2>/dev/null
-
-# Go — Google Drive (requires GOOGLE_ACCESS_TOKEN via Google OAuth)
-echo '{"jsonrpc":"2.0","method":"describe","id":1}' | go run examples/go/google_oauth_plugin.go 2>/dev/null
-
-# Local development — provide token via env var
-GOOGLE_ACCESS_TOKEN=ya29.xxx node examples/nodejs/google_oauth_plugin.js
-```
-
-### Sampling Plugins (v2) — Reverse `sampling/createMessage`
-
-Plugins can ask the host to perform an LLM completion on their behalf. The host owns model selection, billing and quota — the plugin needs no API key. See [docs/sampling.md](https://anna.partners/developers/reference/executa-sampling).
-
-```bash
-# Python
-python examples/python/sampling-summarizer/sampling_summarizer.py
-
-# Node.js
-node examples/nodejs/sampling-tool.js
-
-# Go (separate go.mod inside the subdirectory)
-cd examples/go/sampling-tool && go run ./...
-```
-
-### Persistent Storage Plugins (v2) — Reverse `storage/*` + `files/*`
-
-Plugins can persist per-user / per-app state and upload binary
-attachments without holding any cloud-storage credential — Anna owns the
-bucket, encryption, quota and per-app ACL. See
-[docs/persistent-storage.md](https://anna.partners/developers/reference/executa-persistent-storage).
-
-```bash
-# Python
-python examples/python/storage-notebook/storage_notebook.py
-```
-
-## Distribution Methods
-
-| Method | Installation | Use Case |
-|--------|-------------|----------|
-| **uv** | `uv tool install <package>` | Python tools (recommended) |
-| **pipx** | `pipx install <package>` | Python tools |
-| **npm** | `npm install -g <package>` | Node.js tools |
-| **Homebrew** | `brew install <formula>` | macOS / Linux |
-| **Binary** | HTTP download | Pre-built binaries (any language) |
-| **Local** | Local archive on Agent host (`.tar.gz`/`.tgz`/`.zip` or raw exe) | Dev iteration, internal/air-gapped distribution — same install pipeline as Binary, supports multi-file binaries (see [`examples/multifile-binary/`](examples/multifile-binary/)) |
-
-## Documentation
-
-- [Protocol Specification](https://anna.partners/developers/reference/executa-protocol) — Full JSON-RPC 2.0 over stdio protocol definition
-- [Local Executa Runner](https://anna.partners/developers/reference/cli) — `anna-app executa dev`: run one plugin in isolation (REPL + one-shot)
-- [Platform Authorization](https://anna.partners/developers/reference/executa-credentials) — Credential declaration, auto-injection, and platform authorization integration
-- [Binary Distribution Guide](https://anna.partners/developers/reference/executa-distribution) — Building, signing, and multi-platform deployment
-- [Reverse Sampling](https://anna.partners/developers/reference/executa-sampling) — Plugins requesting LLM completions from the host
-- [Persistent Storage](https://anna.partners/developers/reference/executa-persistent-storage) — Per-user / per-app KV + object storage hosted by Anna
-- [Common Pitfalls](https://anna.partners/developers/reference/executa-pitfalls) — Read this first when a plugin shows as "Stopped"
-- [Anna App Example — AI Resume Reviewer](examples/anna-app-resume-reviewer/README.md) — Production-ready Anna App: optional Anna LLM review, inline fallback, storage-backed versions, and polished UI
-- [Anna App Example — Focus Flow](examples/anna-app-focus-flow/README.md) — End-to-end Anna App: 1 tool + 1 skill + premium UI bundle + full app manifest
-
-## License
-
-MIT
+- `npm run validate`
+- `npm test`
+- `npm run fixture:verify`
+- `npm run test:e2e`
+- `npm audit --json`
+- `python -m py_compile executas\resume-reviewer-python\resume_reviewer_plugin.py`
+- Desktop plus 320, 375, 414, and 768 px responsive checks.
+- Confirm upload, bad-PDF pasted-text fallback, review, approve, save version, restore version, feedback, and Anna storage flows.
